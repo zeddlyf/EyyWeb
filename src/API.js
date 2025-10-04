@@ -1,8 +1,8 @@
 // API Service for EyyTrike Backend Communication
 class APIService {
   constructor() {
-    // For local development, connect to backend running on localhost:3000
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+    // For production, connect to Railway backend
+    this.baseURL = process.env.REACT_APP_API_URL || 'https://eyyback-production.up.railway.app/api';
     this.token = localStorage.getItem('token');
   }
 
@@ -76,6 +76,15 @@ class APIService {
     
     this.setToken(data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
+    return data;
+  }
+
+  async registerAdmin(userData) {
+    const data = await this.makeRequest('/users/', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    
     return data;
   }
 

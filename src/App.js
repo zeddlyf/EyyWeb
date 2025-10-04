@@ -3,8 +3,10 @@ import api from './API';
 import Dashboard from './Dashboard';
 import Analytics from './Analytics';
 import UserManagement from './UserManagement';
+import Register from './Register';
+import AdminRegister from './AdminRegister';
 
-function Login({ onLoggedIn }) {
+function Login({ onLoggedIn, onSwitchToRegister, onSwitchToAdminRegister }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -51,9 +53,26 @@ function Login({ onLoggedIn }) {
         {error && (
           <div style={{ color: '#b91c1c', marginBottom: 12 }}>{error}</div>
         )}
-        <button type="submit" disabled={isLoading} style={{ width: '100%', padding: 10, background: '#111827', color: '#fff', borderRadius: 4 }}>
+        <button type="submit" disabled={isLoading} style={{ width: '100%', padding: 10, background: '#111827', color: '#fff', borderRadius: 4, marginBottom: 12 }}>
           {isLoading ? 'Logging in...' : 'Login'}
         </button>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button 
+            type="button" 
+            onClick={onSwitchToRegister}
+            style={{ flex: 1, padding: 10, background: 'transparent', color: '#111827', border: '1px solid #d1d5db', borderRadius: 4 }}
+          >
+            Register User
+          </button>
+          <button 
+            type="button" 
+            onClick={onSwitchToAdminRegister}
+            style={{ flex: 1, padding: 10, background: 'transparent', color: '#111827', border: '1px solid #d1d5db', borderRadius: 4 }}
+          >
+            Register Admin
+          </button>
+        </div>
       </form>
     </div>
   );
@@ -61,22 +80,52 @@ function Login({ onLoggedIn }) {
 
 function App() {
   const [user, setUser] = useState(null);
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'analytics', or 'users'
+  const [currentView, setCurrentView] = useState('login'); // 'login', 'register', 'adminRegister', 'dashboard', 'analytics', or 'users'
 
   useEffect(() => {
     if (api.isAuthenticated()) {
       setUser(api.getCurrentUser());
+      setCurrentView('dashboard');
     }
   }, []);
 
   const handleLogout = () => {
     api.logout();
     setUser(null);
+    setCurrentView('login');
+  };
+
+  const handleRegistered = (userData) => {
+    setUser(userData);
     setCurrentView('dashboard');
   };
 
   if (!user) {
-    return <Login onLoggedIn={setUser} />;
+    if (currentView === 'register') {
+      return (
+        <Register 
+          onRegistered={handleRegistered}
+          onSwitchToLogin={() => setCurrentView('login')}
+        />
+      );
+    }
+    
+    if (currentView === 'adminRegister') {
+      return (
+        <AdminRegister 
+          onRegistered={handleRegistered}
+          onSwitchToLogin={() => setCurrentView('login')}
+        />
+      );
+    }
+    
+    return (
+      <Login 
+        onLoggedIn={setUser}
+        onSwitchToRegister={() => setCurrentView('register')}
+        onSwitchToAdminRegister={() => setCurrentView('adminRegister')}
+      />
+    );
   }
 
   if (currentView === 'analytics') {
