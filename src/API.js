@@ -326,8 +326,9 @@ class APIService {
     });
   }
 
-  async deleteUser(userId) {
-    return await this.makeRequest(`/users/${userId}`, {
+  async deleteUser(userId, hardDelete = false) {
+    const endpoint = hardDelete ? `/users/${userId}/hard` : `/users/${userId}`;
+    return await this.makeRequest(endpoint, {
       method: 'DELETE',
     });
   }

@@ -242,8 +242,12 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
   };
 
   // Handle delete user
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+  const handleDeleteUser = async (userId, hardDelete = false) => {
+    const message = hardDelete 
+      ? 'Are you sure you want to PERMANENTLY delete this user? This action CANNOT be undone.'
+      : 'Are you sure you want to deactivate this user? They will no longer be able to log in.';
+      
+    if (!window.confirm(message)) {
       return;
     }
 
@@ -252,15 +256,24 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
       setError('');
       setSuccessMessage('');
       
-      await api.deleteUser(userId);
+      const response = await api.deleteUser(userId, hardDelete);
+      console.log('Delete user response:', response);
+      
+      // Close user details modal if open
+      if (showUserDetails && selectedUser && selectedUser._id === userId) {
+        setShowUserDetails(false);
+        setSelectedUser(null);
+      }
       
       // Refresh the users list
       await fetchUsers();
       
-      setSuccessMessage('User deleted successfully!');
+      const successMsg = hardDelete ? 'User permanently deleted!' : 'User deactivated successfully!';
+      setSuccessMessage(successMsg);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setError('Failed to delete user: ' + err.message);
+      console.error('Error deleting user:', err);
+      setError('Failed to delete user: ' + (err.message || 'Unknown error occurred'));
     } finally {
       setActionLoading(false);
     }
@@ -959,7 +972,33 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                                 
                                 <button
                                   onClick={() => {
-                                    handleDeleteUser(userItem._id);
+                                    handleDeleteUser(userItem._id, false);
+                                    setDropdownOpen(null);
+                                  }}
+                                  disabled={actionLoading}
+                                  style={{
+                                    width: '100%',
+                                    padding: '8px 12px',
+                                    background: 'none',
+                                    border: 'none',
+                                    textAlign: 'left',
+                                    cursor: actionLoading ? 'not-allowed' : 'pointer',
+                                    fontSize: '14px',
+                                    color: '#f59e0b',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    opacity: actionLoading ? 0.6 : 1
+                                  }}
+                                  onMouseEnter={(e) => !actionLoading && (e.target.style.background = '#fffbeb')}
+                                  onMouseLeave={(e) => e.target.style.background = 'none'}
+                                >
+                                  🚫 Deactivate User
+                                </button>
+                                
+                                <button
+                                  onClick={() => {
+                                    handleDeleteUser(userItem._id, true);
                                     setDropdownOpen(null);
                                   }}
                                   disabled={actionLoading}
@@ -980,7 +1019,7 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                                   onMouseEnter={(e) => !actionLoading && (e.target.style.background = '#fef2f2')}
                                   onMouseLeave={(e) => e.target.style.background = 'none'}
                                 >
-                                  🗑️ Delete User
+                                  🗑️ Permanently Delete
                                 </button>
                               </div>
                             </div>
@@ -1196,7 +1235,24 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                 )}
                 
                 <button
-                  onClick={() => handleDeleteUser(selectedUser._id)}
+                  onClick={() => handleDeleteUser(selectedUser._id, false)}
+                  disabled={actionLoading}
+                  style={{
+                    padding: '8px 16px',
+                    background: '#f59e0b',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: actionLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    opacity: actionLoading ? 0.6 : 1,
+                    marginRight: '8px'
+                  }}
+                >
+                  🚫 Deactivate
+                </button>
+                <button
+                  onClick={() => handleDeleteUser(selectedUser._id, true)}
                   disabled={actionLoading}
                   style={{
                     padding: '8px 16px',
@@ -1209,7 +1265,7 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                     opacity: actionLoading ? 0.6 : 1
                   }}
                 >
-                  🗑️ Delete
+                  🗑️ Delete Permanently
                 </button>
               </div>
             </div>
