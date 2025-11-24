@@ -1,8 +1,7 @@
 // API Service for EyyTrike Backend Communication
 class APIService {
   constructor() {
-    // For production, connect to Railway backend
-    this.baseURL = process.env.REACT_APP_API_URL || 'https://eyyback-production.up.railway.app/api';
+    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
     this.token = localStorage.getItem('token');
   }
 
@@ -26,6 +25,16 @@ class APIService {
     const url = `${this.baseURL}${endpoint}`;
     const token = this.getToken();
 
+    if (token && this.isTokenExpiringSoon(token)) {
+      try {
+        const renewed = await this.renewToken();
+        if (renewed && renewed.token) {
+          this.setToken(renewed.token);
+          localStorage.setItem('user', JSON.stringify(renewed.user));
+        }
+      } catch {}
+    }
+
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -42,9 +51,19 @@ class APIService {
       if (!response.ok) {
         // Handle token expiration
         if (response.status === 401) {
-          this.setToken(null);
-          localStorage.removeItem('user');
-          throw new Error('Session expired. Please login again.');
+          const hadToken = !!this.getToken();
+          const isExpired = data && data.error === 'Token expired';
+          const isAuthRoute = endpoint.startsWith('/auth/login') || endpoint.startsWith('/auth/register');
+          if (isExpired) {
+            this.setToken(null);
+            localStorage.removeItem('user');
+            try {
+              if (hadToken && !isAuthRoute) {
+                window.dispatchEvent(new CustomEvent('api:sessionExpired'));
+              }
+            } catch {}
+          }
+          throw new Error(isExpired ? 'Session expired. Please login again.' : (data.error || 'Unauthorized'));
         }
         throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
       }
@@ -54,6 +73,27 @@ class APIService {
       console.error('API Request failed:', error);
       throw error;
     }
+  }
+
+  decodeToken(token) {
+    try {
+      const payload = token.split('.')[1];
+      const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  }
+
+  isTokenExpiringSoon(token, thresholdSeconds = 600) {
+    const decoded = this.decodeToken(token);
+    if (!decoded || !decoded.exp) return false;
+    const now = Math.floor(Date.now() / 1000);
+    return decoded.exp - now < thresholdSeconds;
+  }
+
+  async renewToken() {
+    return await this.makeRequest('/auth/renew', { method: 'POST' });
   }
 
   // Authentication Methods
@@ -183,6 +223,82 @@ class APIService {
       method: 'POST',
       body: JSON.stringify({ rating }),
     });
+  }
+
+  // Feedback Methods
+  async rateRide(rideId, rating, feedback) {
+    return await this.makeRequest(`/rides/${rideId}/rate`, {
+      method: 'POST',
+      body: JSON.stringify({ rating, feedback }),
+    });
+  }
+
+  async listFeedback(driverId, { status = 'approved', sort = 'newest', page = 1, limit = 20 } = {}) {
+    const params = new URLSearchParams({ status, sort, page: String(page), limit: String(limit) });
+    if (driverId) params.append('driverId', driverId);
+    return await this.makeRequest(`/rides/feedback?${params.toString()}`);
+  }
+
+  async feedbackDistribution(driverId) {
+    const params = new URLSearchParams({ driverId });
+    return await this.makeRequest(`/rides/feedback/distribution?${params.toString()}`);
+  }
+
+  async flagFeedback(rideId, reason = '') {
+    return await this.makeRequest(`/rides/${rideId}/feedback/flag`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  async adminListPendingFeedback() {
+    return await this.makeRequest('/rides/admin/feedback/pending');
+  }
+
+  async adminApproveFeedback(rideId) {
+    return await this.makeRequest(`/rides/admin/feedback/${rideId}/approve`, { method: 'POST' });
+  }
+
+  async adminRejectFeedback(rideId) {
+    return await this.makeRequest(`/rides/admin/feedback/${rideId}/reject`, { method: 'POST' });
+  }
+
+  // Notifications
+  async getNotifications({ unread = false, page = 1, limit = 50 } = {}) {
+    const params = new URLSearchParams({ unread: String(unread), page: String(page), limit: String(limit) });
+    return await this.makeRequest(`/notifications?${params.toString()}`);
+  }
+  async markNotificationRead(id) {
+    return await this.makeRequest(`/notifications/${id}/read`, { method: 'PATCH' });
+  }
+  async getNotificationPreferences() {
+    return await this.makeRequest(`/notifications/preferences`);
+  }
+  async setNotificationPreferences(prefs) {
+    return await this.makeRequest(`/notifications/preferences`, { method: 'POST', body: JSON.stringify(prefs) });
+  }
+  async adminBroadcast(title, body, roles = []) {
+    return await this.makeRequest(`/notifications/admin/broadcast`, { method: 'POST', body: JSON.stringify({ title, body, roles }) });
+  }
+
+  // Emergency
+  async getEmergencyContacts() {
+    return await this.makeRequest('/emergency/contacts');
+  }
+  async addEmergencyContact({ name, phone, priority = 1, enabled = true }) {
+    return await this.makeRequest('/emergency/contacts', { method: 'POST', body: JSON.stringify({ name, phone, priority, enabled }) });
+  }
+  async updateEmergencyContact(id, patch) {
+    return await this.makeRequest(`/emergency/contacts/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+  }
+  async deleteEmergencyContact(id) {
+    return await this.makeRequest(`/emergency/contacts/${id}`, { method: 'DELETE' });
+  }
+  async requestEmergencyOtp() {
+    return await this.makeRequest('/emergency/request-otp', { method: 'POST' });
+  }
+  async sendEmergencyAlert(payload) {
+    return await this.makeRequest('/emergency/alert', { method: 'POST', body: JSON.stringify(payload) });
   }
 
   // Payment Methods

@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import api from './API';
 import 'leaflet/dist/leaflet.css';
+import { io } from 'socket.io-client';
 
 // Fix for default markers in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -33,11 +34,14 @@ function MapUpdater({ center }) {
   return null;
 }
 
-function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserManagement }) {
+function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserManagement, onNavigateToFeedbackAdmin, onNavigateToNotifications, onNavigateToEmergency }) {
   const [drivers, setDrivers] = useState([]);
+  const [driverMap, setDriverMap] = useState({});
+  const [lastSeen, setLastSeen] = useState({});
   const [userLocation, setUserLocation] = useState([13.6240, 123.1875]); // Default to Naga City
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [socketConnected, setSocketConnected] = useState(false);
 
   // Get user's current location
   useEffect(() => {
@@ -63,7 +67,11 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
         userLocation[1], 
         10000 // 10km radius
       );
-      setDrivers(nearbyDrivers);
+      const filtered = (nearbyDrivers || []).filter(d => {
+        const coords = d.location?.coordinates;
+        return d.isAvailable === true && Array.isArray(coords) && coords.length === 2 && isFinite(coords[0]) && isFinite(coords[1]);
+      });
+      setDrivers(filtered);
       setError('');
     } catch (err) {
       setError('Failed to load drivers: ' + err.message);
@@ -76,10 +84,61 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
   useEffect(() => {
     fetchDrivers();
     
-    // Refresh driver locations every 30 seconds
+    // Refresh driver locations every 30 seconds (fallback)
     const interval = setInterval(fetchDrivers, 30000);
     return () => clearInterval(interval);
   }, [userLocation]);
+
+  // Socket: real-time driver updates
+  useEffect(() => {
+    const token = api.getToken();
+    const socket = io(api.baseURL.replace('/api',''), {
+      transports: ['websocket'],
+      auth: token ? { token } : undefined,
+      autoConnect: true,
+      reconnection: true,
+    });
+    socket.on('connect', () => setSocketConnected(true));
+    socket.on('disconnect', () => setSocketConnected(false));
+    socket.on('driverLocationChanged', (payload) => {
+      const { driverId, location, status, hasPassenger, rideId, timestamp } = payload;
+      const valid = location && isFinite(location.latitude) && isFinite(location.longitude);
+      // Only track available drivers, drop on-trip
+      const isAvailable = status === 'available' && valid;
+      setLastSeen((prev) => ({ ...prev, [driverId]: Date.now() }));
+      setDriverMap((prev) => ({
+        ...prev,
+        [driverId]: isAvailable ? { driverId, location, status, hasPassenger, rideId, timestamp } : undefined
+      }));
+      setDrivers((prev) => {
+        const existingIdx = prev.findIndex(d => d._id === driverId);
+        if (!isAvailable) {
+          // Remove if present
+          if (existingIdx >= 0) {
+            const updated = [...prev];
+            updated.splice(existingIdx, 1);
+            return updated;
+          }
+          return prev;
+        }
+        // Upsert available driver
+        const up = {
+          _id: driverId,
+          location: { type: 'Point', coordinates: [location.longitude, location.latitude] },
+          isAvailable: true
+        };
+        if (existingIdx >= 0) {
+          const updated = [...prev];
+          updated[existingIdx] = { ...updated[existingIdx], ...up };
+          return updated;
+        }
+        return [...prev, up];
+      });
+    });
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -121,6 +180,34 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
             📊 Analytics
           </button>
           <button
+            onClick={onNavigateToNotifications}
+            style={{
+              padding: '6px 12px',
+              background: '#0ea5e9',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            🔔 Notifications
+          </button>
+          <button
+            onClick={onNavigateToEmergency}
+            style={{
+              padding: '6px 12px',
+              background: '#ef4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            🆘 Emergency
+          </button>
+          <button
             onClick={onNavigateToUserManagement}
             style={{
               padding: '6px 12px',
@@ -134,6 +221,22 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
           >
             👥 Users
           </button>
+          {user.role === 'admin' && (
+            <button
+              onClick={onNavigateToFeedbackAdmin}
+              style={{
+                padding: '6px 12px',
+                background: '#f59e0b',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              🛡️ Moderate
+            </button>
+          )}
           <button
             onClick={onLogout}
             style={{
@@ -164,8 +267,11 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           
-          {/* Driver markers */}
-          {drivers.map((driver) => (
+          {/* Driver markers (filter ghosts: must have recent lastSeen within 30s) */}
+          {drivers.filter(d => {
+            const seen = lastSeen[d._id];
+            return seen && Date.now() - seen < 30000; // 30s freshness window
+          }).map((driver) => (
             <Marker
               key={driver._id}
               position={[driver.location.coordinates[1], driver.location.coordinates[0]]}
@@ -177,7 +283,27 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
                   <div style={{ margin: '8px 0' }}>
                     <div>📞 {driver.phoneNumber}</div>
                     <div>⭐ Rating: {driver.rating ? driver.rating.toFixed(1) : 'No rating'}</div>
-                    <div>🚗 Available: {driver.isAvailable ? 'Yes' : 'No'}</div>
+                    <div>🚗 Status: {driverMap[driver._id]?.status || (driver.isAvailable ? 'available' : 'on-trip')}</div>
+                    <div>🪪 License: {driver.licenseNumber || '—'}</div>
+                    <div>👤 Passenger: {driverMap[driver._id]?.hasPassenger ? 'With passenger' : 'No passenger'}</div>
+                    <div>📍 Coords: {driver.location.coordinates[1].toFixed(5)}, {driver.location.coordinates[0].toFixed(5)}</div>
+                    {driverMap[driver._id]?.rideId && (
+                      <div style={{ marginTop: '6px' }}>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const ride = await api.getRideById(driverMap[driver._id].rideId);
+                              alert(`Ride ${ride._id}\nStatus: ${ride.status}\nFrom: ${ride.pickupLocation.address}\nTo: ${ride.dropoffLocation.address}`);
+                            } catch (err) {
+                              console.error('Failed to fetch ride details', err);
+                            }
+                          }}
+                          style={{ padding: '6px 8px', background: '#1f2937', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                          View Trip Details
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Popup>
@@ -185,7 +311,7 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
           ))}
         </MapContainer>
 
-        {/* Loading overlay */}
+        {/* Loading overlay or No drivers message */}
         {isLoading && (
           <div style={{
             position: 'absolute',
@@ -209,6 +335,24 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
             </div>
           </div>
         )}
+        {!isLoading && drivers.filter(d => {
+          const seen = lastSeen[d._id];
+          return seen && Date.now() - seen < 30000;
+        }).length === 0 && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '20px',
+            background: '#fff',
+            color: '#374151',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            border: '1px solid #e5e7eb',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          }}>
+            No available drivers right now.
+          </div>
+        )}
 
         {/* Error message */}
         {error && (
@@ -227,22 +371,41 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
           </div>
         )}
 
-        {/* Driver count overlay */}
+      {/* Driver count overlay (available + fresh) */}
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        left: '20px',
+        background: 'rgba(255,255,255,0.9)',
+        padding: '12px 16px',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{ fontSize: '14px', color: '#6b7280' }}>Available Drivers</div>
+        <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>
+          {isLoading ? '...' : drivers.filter(d => {
+            const seen = lastSeen[d._id];
+            return seen && Date.now() - seen < 30000;
+          }).length}
+        </div>
+      </div>
+
+      {/* Socket status */}
+      {!socketConnected && (
         <div style={{
           position: 'absolute',
           bottom: '20px',
-          left: '20px',
-          background: 'rgba(255,255,255,0.9)',
-          padding: '12px 16px',
+          right: '20px',
+          background: '#fff7ed',
+          color: '#9a3412',
+          padding: '10px 12px',
           borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+          border: '1px solid #fdba74'
         }}>
-          <div style={{ fontSize: '14px', color: '#6b7280' }}>Available Drivers</div>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>
-            {isLoading ? '...' : drivers.length}
-          </div>
+          Real-time connection lost. Trying to reconnect...
         </div>
-      </div>
+      )}
+    </div>
 
       {/* CSS for spinner animation */}
       <style>{`

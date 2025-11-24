@@ -11,10 +11,18 @@ function Login({ onLoggedIn, onSwitchToRegister, onSwitchToAdminRegister }) {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [sessionMessage, setSessionMessage] = useState('');
+
+  useEffect(() => {
+    const handler = () => setSessionMessage('Your session has expired. Please login again.');
+    window.addEventListener('api:sessionExpired', handler);
+    return () => window.removeEventListener('api:sessionExpired', handler);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSessionMessage('');
     setIsLoading(true);
     try {
       const data = await api.login(email, password);
@@ -50,6 +58,9 @@ function Login({ onLoggedIn, onSwitchToRegister, onSwitchToAdminRegister }) {
             style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 4 }}
           />
         </div>
+        {sessionMessage && (
+          <div style={{ color: '#b91c1c', marginBottom: 12 }}>{sessionMessage}</div>
+        )}
         {error && (
           <div style={{ color: '#b91c1c', marginBottom: 12 }}>{error}</div>
         )}
@@ -80,13 +91,25 @@ function Login({ onLoggedIn, onSwitchToRegister, onSwitchToAdminRegister }) {
 
 function App() {
   const [user, setUser] = useState(null);
-  const [currentView, setCurrentView] = useState('login'); // 'login', 'register', 'adminRegister', 'dashboard', 'analytics', or 'users'
+  const [currentView, setCurrentView] = useState('login'); // 'login', 'register', 'adminRegister', 'dashboard', 'analytics', 'users', 'feedbackAdmin', 'notifications', 'emergency'
+  const [sessionMessage, setSessionMessage] = useState('');
 
   useEffect(() => {
     if (api.isAuthenticated()) {
       setUser(api.getCurrentUser());
       setCurrentView('dashboard');
     }
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      setSessionMessage('Your session has expired. Please login again.');
+      api.logout();
+      setUser(null);
+      setCurrentView('login');
+    };
+    window.addEventListener('api:sessionExpired', handler);
+    return () => window.removeEventListener('api:sessionExpired', handler);
   }, []);
 
   const handleLogout = () => {
@@ -150,12 +173,48 @@ function App() {
     );
   }
 
+  if (currentView === 'feedbackAdmin') {
+    const FeedbackAdmin = require('./FeedbackAdmin').default;
+    return (
+      <FeedbackAdmin
+        user={user}
+        onLogout={handleLogout}
+        onNavigateToDashboard={() => setCurrentView('dashboard')}
+      />
+    );
+  }
+
+  if (currentView === 'notifications') {
+    const NotificationCenter = require('./NotificationCenter').default;
+    return (
+      <NotificationCenter
+        user={user}
+        onLogout={handleLogout}
+        onNavigateToDashboard={() => setCurrentView('dashboard')}
+      />
+    );
+  }
+
+  if (currentView === 'emergency') {
+    const EmergencyCenter = require('./EmergencyCenter').default;
+    return (
+      <EmergencyCenter
+        user={user}
+        onLogout={handleLogout}
+        onNavigateToDashboard={() => setCurrentView('dashboard')}
+      />
+    );
+  }
+
   return (
     <Dashboard 
       user={user} 
       onLogout={handleLogout}
       onNavigateToAnalytics={() => setCurrentView('analytics')}
       onNavigateToUserManagement={() => setCurrentView('users')}
+      onNavigateToFeedbackAdmin={() => setCurrentView('feedbackAdmin')}
+      onNavigateToNotifications={() => setCurrentView('notifications')}
+      onNavigateToEmergency={() => setCurrentView('emergency')}
     />
   );
 }

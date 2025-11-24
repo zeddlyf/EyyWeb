@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from './API'; 
+import AddressForm from './AddressForm';
 
 function AdminRegister({ onRegistered, onSwitchToLogin }) {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ function AdminRegister({ onRegistered, onSwitchToLogin }) {
     role: 'admin',
     address: {
       street: '',
+      barangay: '',
       city: '',
       province: '',
       postalCode: '',
@@ -157,62 +159,10 @@ function AdminRegister({ onRegistered, onSwitchToLogin }) {
 
         <h3 style={{ marginTop: 24, marginBottom: 12 }}>Address</h3>
         
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>Street</label>
-          <input
-            type="text"
-            name="address.street"
-            value={formData.address.street}
-            onChange={handleChange}
-            style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 4 }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>City *</label>
-          <input
-            type="text"
-            name="address.city"
-            value={formData.address.city}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 4 }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>Province *</label>
-          <input
-            type="text"
-            name="address.province"
-            value={formData.address.province}
-            onChange={handleChange}
-            required
-            style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 4 }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>Postal Code</label>
-          <input
-            type="text"
-            name="address.postalCode"
-            value={formData.address.postalCode}
-            onChange={handleChange}
-            style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 4 }}
-          />
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>Country</label>
-          <input
-            type="text"
-            name="address.country"
-            value={formData.address.country}
-            onChange={handleChange}
-            style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 4 }}
-          />
-        </div>
+        <AddressForm
+          value={formData.address}
+          onChange={(addr) => setFormData(prev => ({ ...prev, address: { ...prev.address, ...addr } }))}
+        />
 
         {error && (
           <div style={{ color: '#b91c1c', marginBottom: 12, padding: 8, backgroundColor: '#fef2f2', borderRadius: 4 }}>

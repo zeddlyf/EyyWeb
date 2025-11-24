@@ -42,6 +42,10 @@ async function testConnection() {
       const loginResult = await api.login('test@example.com', 'testpassword123');
       console.log('✅ Login test: SUCCESS');
       console.log('   Token received:', !!loginResult.token);
+
+      console.log('\n♻️  Testing token renewal...');
+      const renewed = await api.renewToken();
+      console.log('✅ Renew test:', !!renewed.token ? 'SUCCESS' : 'FAILED');
       
       // Test profile endpoint
       console.log('\n👤 Testing profile endpoint...');
