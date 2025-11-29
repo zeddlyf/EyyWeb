@@ -66,16 +66,6 @@ export default function FeedbackAdmin({ user, onLogout, onNavigateToDashboard })
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f9fafb' }}>
-      <div style={{ background: '#1f2937', color: 'white', padding: '16px 24px', display: 'flex', justifyContent: 'space-between' }}>
-        <div>
-          <h1 style={{ margin: 0 }}>Moderate Feedback</h1>
-          <p style={{ margin: '4px 0 0 0', opacity: 0.8 }}>Admin dashboard</p>
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button onClick={onNavigateToDashboard} style={{ padding: '6px 12px', background: '#3B82F6', color: 'white', borderRadius: 6 }}>🗺️ Map</button>
-          <button onClick={onLogout} style={{ padding: '6px 12px', background: '#ef4444', color: 'white', borderRadius: 6 }}>Logout</button>
-        </div>
-      </div>
       <div style={{ flex: 1, padding: 24 }}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
           <select aria-label="Status" value={status} onChange={e => setStatus(e.target.value)} style={{ padding: 8, border: '1px solid #d1d5db', borderRadius: 6 }}>

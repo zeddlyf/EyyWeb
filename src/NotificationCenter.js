@@ -58,19 +58,6 @@ export default function NotificationCenter({ user, onLogout, onNavigateToDashboa
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f9fafb' }}>
-      <div style={{ background: '#1f2937', color: 'white', padding: '16px 24px', display: 'flex', justifyContent: 'space-between' }}>
-        <div>
-          <h1 style={{ margin: 0 }}>Notifications {badge > 0 ? `(${badge})` : ''}</h1>
-          <p style={{ margin: '4px 0 0 0', opacity: 0.8 }}>All alerts and updates</p>
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <input type="checkbox" checked={unreadOnly} onChange={e => setUnreadOnly(e.target.checked)} /> Unread only
-          </label>
-          <button onClick={onNavigateToDashboard} style={{ padding: '6px 12px', background: '#3B82F6', color: 'white', borderRadius: 6 }}>🗺️ Map</button>
-          <button onClick={onLogout} style={{ padding: '6px 12px', background: '#ef4444', color: 'white', borderRadius: 6 }}>Logout</button>
-        </div>
-      </div>
       <div style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
         {error && <div style={{ background: '#fef2f2', color: '#b91c1c', padding: 10, borderRadius: 6, border: '1px solid #fecaca', marginBottom: 12 }}>{error}</div>}
         {Object.keys(grouped).length === 0 && <div style={{ background: '#fff', padding: 16, borderRadius: 12, border: '1px solid #e5e7eb' }}>No notifications</div>}

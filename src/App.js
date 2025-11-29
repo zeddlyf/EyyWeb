@@ -5,94 +5,16 @@ import Analytics from './Analytics';
 import UserManagement from './UserManagement';
 import Register from './Register';
 import AdminRegister from './AdminRegister';
-
-function Login({ onLoggedIn, onSwitchToRegister, onSwitchToAdminRegister }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [sessionMessage, setSessionMessage] = useState('');
-
-  useEffect(() => {
-    const handler = () => setSessionMessage('Your session has expired. Please login again.');
-    window.addEventListener('api:sessionExpired', handler);
-    return () => window.removeEventListener('api:sessionExpired', handler);
-  }, []);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSessionMessage('');
-    setIsLoading(true);
-    try {
-      const data = await api.login(email, password);
-      onLoggedIn(data.user);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div style={{ maxWidth: 360, margin: '80px auto', padding: 24, border: '1px solid #e5e7eb', borderRadius: 8 }}>
-      <h2 style={{ marginBottom: 16 }}>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 4 }}
-          />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: '100%', padding: 8, border: '1px solid #d1d5db', borderRadius: 4 }}
-          />
-        </div>
-        {sessionMessage && (
-          <div style={{ color: '#b91c1c', marginBottom: 12 }}>{sessionMessage}</div>
-        )}
-        {error && (
-          <div style={{ color: '#b91c1c', marginBottom: 12 }}>{error}</div>
-        )}
-        <button type="submit" disabled={isLoading} style={{ width: '100%', padding: 10, background: '#111827', color: '#fff', borderRadius: 4, marginBottom: 12 }}>
-          {isLoading ? 'Logging in...' : 'Login'}
-        </button>
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button 
-            type="button" 
-            onClick={onSwitchToRegister}
-            style={{ flex: 1, padding: 10, background: 'transparent', color: '#111827', border: '1px solid #d1d5db', borderRadius: 4 }}
-          >
-            Register User
-          </button>
-          <button 
-            type="button" 
-            onClick={onSwitchToAdminRegister}
-            style={{ flex: 1, padding: 10, background: 'transparent', color: '#111827', border: '1px solid #d1d5db', borderRadius: 4 }}
-          >
-            Register Admin
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
+import Navbar from './components/Navbar';
+import Overlay from './components/Overlay';
+import Login from './Login';
 
 function App() {
   const [user, setUser] = useState(null);
   const [currentView, setCurrentView] = useState('login'); // 'login', 'register', 'adminRegister', 'dashboard', 'analytics', 'users', 'feedbackAdmin', 'notifications', 'emergency'
   const [sessionMessage, setSessionMessage] = useState('');
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [overlayOpen, setOverlayOpen] = useState(false);
 
   useEffect(() => {
     if (api.isAuthenticated()) {
@@ -151,71 +73,100 @@ function App() {
     );
   }
 
-  if (currentView === 'analytics') {
-    return (
-      <Analytics 
-        user={user} 
-        onLogout={handleLogout}
-        onNavigateToDashboard={() => setCurrentView('dashboard')}
-        onNavigateToUserManagement={() => setCurrentView('users')}
-      />
-    );
-  }
+  const renderView = () => {
+    if (currentView === 'analytics') {
+      return (
+        <Analytics 
+          user={user} 
+          onLogout={handleLogout}
+          onNavigateToDashboard={() => setCurrentView('dashboard')}
+          onNavigateToUserManagement={() => setCurrentView('users')}
+        />
+      );
+    }
 
-  if (currentView === 'users') {
+    if (currentView === 'users') {
+      return (
+        <UserManagement 
+          user={user} 
+          onLogout={handleLogout}
+          onNavigateToDashboard={() => setCurrentView('dashboard')}
+          onNavigateToAnalytics={() => setCurrentView('analytics')}
+          initialSearch={globalSearchQuery}
+        />
+      );
+    }
+
+    if (currentView === 'feedbackAdmin') {
+      const FeedbackAdmin = require('./FeedbackAdmin').default;
+      return (
+        <FeedbackAdmin
+          user={user}
+          onLogout={handleLogout}
+          onNavigateToDashboard={() => setCurrentView('dashboard')}
+        />
+      );
+    }
+
+    if (currentView === 'notifications') {
+      const NotificationCenter = require('./NotificationCenter').default;
+      return (
+        <NotificationCenter
+          user={user}
+          onLogout={handleLogout}
+          onNavigateToDashboard={() => setCurrentView('dashboard')}
+        />
+      );
+    }
+
+    if (currentView === 'emergency') {
+      const EmergencyCenter = require('./EmergencyCenter').default;
+      return (
+        <EmergencyCenter
+          user={user}
+          onLogout={handleLogout}
+          onNavigateToDashboard={() => setCurrentView('dashboard')}
+        />
+      );
+    }
+
     return (
-      <UserManagement 
+      <Dashboard 
         user={user} 
         onLogout={handleLogout}
-        onNavigateToDashboard={() => setCurrentView('dashboard')}
         onNavigateToAnalytics={() => setCurrentView('analytics')}
+        onNavigateToUserManagement={() => setCurrentView('users')}
+        onNavigateToFeedbackAdmin={() => setCurrentView('feedbackAdmin')}
+        onNavigateToNotifications={() => setCurrentView('notifications')}
+        onNavigateToEmergency={() => setCurrentView('emergency')}
       />
     );
-  }
-
-  if (currentView === 'feedbackAdmin') {
-    const FeedbackAdmin = require('./FeedbackAdmin').default;
-    return (
-      <FeedbackAdmin
-        user={user}
-        onLogout={handleLogout}
-        onNavigateToDashboard={() => setCurrentView('dashboard')}
-      />
-    );
-  }
-
-  if (currentView === 'notifications') {
-    const NotificationCenter = require('./NotificationCenter').default;
-    return (
-      <NotificationCenter
-        user={user}
-        onLogout={handleLogout}
-        onNavigateToDashboard={() => setCurrentView('dashboard')}
-      />
-    );
-  }
-
-  if (currentView === 'emergency') {
-    const EmergencyCenter = require('./EmergencyCenter').default;
-    return (
-      <EmergencyCenter
-        user={user}
-        onLogout={handleLogout}
-        onNavigateToDashboard={() => setCurrentView('dashboard')}
-      />
-    );
-  }
+  };
 
   return (
-    <Dashboard 
-      user={user} 
-      onLogout={handleLogout}
-      onNavigateToAnalytics={() => setCurrentView('analytics')}
-      onNavigateToUserManagement={() => setCurrentView('users')}
-      onNavigateToFeedbackAdmin={() => setCurrentView('feedbackAdmin')}
-      onNavigateToNotifications={() => setCurrentView('notifications')}
-      onNavigateToEmergency={() => setCurrentView('emergency')}
-    />
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Navbar
+        user={user}
+        currentView={currentView}
+        onNavigate={(view) => setCurrentView(view)}
+        onLogout={handleLogout}
+        onGlobalSearch={(q) => { setGlobalSearchQuery(q); setCurrentView('users'); }}
+        onBrandClick={() => { setCurrentView('dashboard'); setOverlayOpen(false); }}
+      />
+      <div style={{ flex: 1, position: 'relative' }}>
+        <Overlay
+          open={overlayOpen}
+          onClose={() => setOverlayOpen(false)}
+          title="Quick Actions"
+        >
+          <div style={{ display: 'grid', gap: 12 }}>
+            <button data-overlay-focus="true" style={{ padding: '8px 12px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: 6 }} onClick={() => { setCurrentView('analytics'); setOverlayOpen(false); }}>Go to Analytics</button>
+            <button data-overlay-focus="true" style={{ padding: '8px 12px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: 6 }} onClick={() => { setCurrentView('users'); setOverlayOpen(false); }}>Manage Users</button>
+          </div>
+        </Overlay>
+        {renderView()}
+      </div>
+    </div>
   );
 }
 

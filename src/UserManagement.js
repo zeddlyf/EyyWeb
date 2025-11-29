@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from './API';
 
-function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics }) {
+function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics, initialSearch }) {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +34,12 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
     }
   });
   const [dropdownOpen, setDropdownOpen] = useState(null); // Track which dropdown is open
+  const scrollRef = useRef(null);
+  const fabRef = useRef(null);
+  const scrollRaf = useRef(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [fabOffset, setFabOffset] = useState(16);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
 
   // Fetch all users from the backend
   const fetchUsers = async () => {
@@ -99,17 +105,88 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
     fetchUsers();
   }, []);
 
-  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (typeof initialSearch === 'string') {
+      setSearchTerm(initialSearch);
+    }
+  }, [initialSearch]);
+
+  // Close dropdown when clicking outside (covers fixed dropdown as well)
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownOpen && !event.target.closest('.dropdown-container')) {
+      if (
+        dropdownOpen &&
+        !event.target.closest('.dropdown-container') &&
+        !event.target.closest('.um-fixed-dropdown')
+      ) {
+        setDropdownOpen(null);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (dropdownOpen && event.key === 'Escape') {
         setDropdownOpen(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [dropdownOpen]);
+
+  // Floating Action Button: scroll detection and overlap handling
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      if (scrollRaf.current) return;
+      scrollRaf.current = requestAnimationFrame(() => {
+        scrollRaf.current = 0;
+        const st = el.scrollTop || 0;
+        setIsScrolled(st > 160);
+
+        if (fabRef.current && dropdownOpen) {
+          const fabRect = fabRef.current.getBoundingClientRect();
+          const menu = document.querySelector(`[data-dropdown-id="${dropdownOpen}"]`);
+          if (menu) {
+            const menuRect = menu.getBoundingClientRect();
+            const intersects = !(
+              fabRect.right < menuRect.left ||
+              fabRect.left > menuRect.right ||
+              fabRect.bottom < menuRect.top ||
+              fabRect.top > menuRect.bottom
+            );
+            setFabOffset(intersects ? 64 : 16);
+          } else {
+            setFabOffset(16);
+          }
+        } else {
+          setFabOffset(16);
+        }
+
+        if (dropdownOpen) {
+          const btn = document.querySelector(`[data-action-btn-id="${dropdownOpen}"]`);
+          if (btn) {
+            const rect = btn.getBoundingClientRect();
+            const dw = 260;
+            const left = Math.max(16, Math.min(rect.left, window.innerWidth - dw - 16));
+            setDropdownPos({ top: rect.bottom + 8, left });
+          }
+        }
+      });
+    };
+
+    // Initialize state on mount and re-run when dropdown changes
+    onScroll();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      if (scrollRaf.current) cancelAnimationFrame(scrollRaf.current);
+      scrollRaf.current = 0;
     };
   }, [dropdownOpen]);
 
@@ -400,98 +477,54 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
           .dropdown-scroll::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
           }
+
+          /* Toolbar aesthetics */
+          .um-toolbar input, .um-toolbar select {
+            transition: box-shadow 160ms ease, border-color 160ms ease;
+          }
+          .um-toolbar input:focus, .um-toolbar select:focus {
+            outline: none;
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 3px rgba(147,197,253,0.35);
+          }
+          .um-toolbar button {
+            transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, opacity 160ms ease;
+          }
+          @media (prefers-reduced-motion: no-preference) {
+            .um-toolbar button:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            }
+          }
+
+          /* Floating Action Button styles */
+          .um-fab, .um-fab-mini {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+            border: none;
+            cursor: pointer;
+            color: white;
+            background: var(--brand-primary);
+            border-radius: 9999px;
+          }
+          .um-fab-mini {
+            background: #6b7280;
+          }
+          @media (prefers-reduced-motion: no-preference) {
+            .um-fab, .um-fab-mini {
+              transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, opacity 180ms ease;
+            }
+            .um-fab:hover, .um-fab-mini:hover {
+              transform: scale(1.03);
+              box-shadow: 0 10px 20px rgba(0,0,0,0.18);
+            }
+          }
+          .um-fab:focus-visible, .um-fab-mini:focus-visible {
+            outline: 3px solid #93c5fd;
+            outline-offset: 3px;
+          }
         `}
       </style>
-      {/* Header */}
-      <div style={{ 
-        background: '#1f2937', 
-        color: 'white', 
-        padding: '16px 24px', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '24px' }}>👥 User Management</h1>
-          <p style={{ margin: '4px 0 0 0', opacity: 0.8 }}>
-            Manage commuters and drivers (excludes admin accounts)
-            {user.role !== 'admin' && (
-              <span style={{ 
-                marginLeft: '12px', 
-                background: '#ef4444', 
-                color: 'white', 
-                padding: '2px 8px', 
-                borderRadius: '12px', 
-                fontSize: '12px',
-                fontWeight: 'bold'
-              }}>
-                Admin Access Required
-              </span>
-            )}
-            {user.role === 'admin' && pendingDriversCount > 0 && (
-              <span style={{ 
-                marginLeft: '12px', 
-                background: '#fbbf24', 
-                color: '#92400e', 
-                padding: '2px 8px', 
-                borderRadius: '12px', 
-                fontSize: '12px',
-                fontWeight: 'bold'
-              }}>
-                {pendingDriversCount} pending driver{pendingDriversCount > 1 ? 's' : ''}
-              </span>
-            )}
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={onNavigateToDashboard}
-            style={{
-              padding: '6px 12px',
-              background: '#3B82F6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            🗺️ Map
-          </button>
-          <button
-            onClick={onNavigateToAnalytics}
-            style={{
-              padding: '6px 12px',
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            📊 Analytics
-          </button>
-          <button
-            onClick={onLogout}
-            style={{
-              padding: '6px 12px',
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
+      <div ref={scrollRef} style={{ flex: 1, padding: '24px', overflowY: 'auto', scrollBehavior: 'smooth' }}>
         {/* Admin Access Check */}
         {user.role !== 'admin' && (
           <div style={{
@@ -513,7 +546,7 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
 
         {/* Filters and Search - Only show for admin users */}
         {user.role === 'admin' && (
-          <div style={{
+          <div className="um-toolbar" style={{
             background: 'white',
             padding: '20px',
             borderRadius: '12px',
@@ -618,50 +651,7 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
               </button>
             )}
 
-            {/* Create User Button */}
-            <button
-              onClick={openCreateForm}
-              style={{
-                padding: '8px 16px',
-                background: '#3b82f6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 'bold'
-              }}
-            >
-              ➕ Create User
-            </button>
-
-            {/* Test Connection Button */}
-            <button
-              onClick={async () => {
-                try {
-                  const result = await api.checkConnection();
-                  if (result) {
-                    setSuccessMessage('✅ Connection successful!');
-                    setTimeout(() => setSuccessMessage(''), 3000);
-                  } else {
-                    setError('❌ Connection failed!');
-                  }
-                } catch (err) {
-                  setError('❌ Connection test failed: ' + err.message);
-                }
-              }}
-              style={{
-                padding: '8px 16px',
-                background: '#059669',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              🔗 Test Connection
-            </button>
+            
 
             {/* Refresh Button */}
             <button
@@ -797,7 +787,18 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                       <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                         <div className="dropdown-container" style={{ position: 'relative', display: 'inline-block' }}>
                           <button
-                            onClick={() => setDropdownOpen(dropdownOpen === userItem._id ? null : userItem._id)}
+                            data-action-btn-id={userItem._id}
+                            onClick={(e) => {
+                              const willOpen = dropdownOpen !== userItem._id;
+                              setDropdownOpen(willOpen ? userItem._id : null);
+                              if (willOpen) {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const dw = 260;
+                                const left = Math.max(16, Math.min(rect.left, window.innerWidth - dw - 16));
+                                setDropdownPos({ top: rect.bottom + 8, left });
+                              }
+                              e.preventDefault();
+                            }}
                             style={{
                               padding: '6px 12px',
                               background: '#6b7280',
@@ -816,214 +817,6 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                               {dropdownOpen === userItem._id ? '▲' : '▼'}
                             </span>
                           </button>
-                          
-                          {dropdownOpen === userItem._id && (
-                            <div className="dropdown-scroll" style={{
-                              position: 'absolute',
-                              top: '100%',
-                              right: '0',
-                              background: 'white',
-                              border: '1px solid #e5e7eb',
-                              borderRadius: '8px',
-                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                              zIndex: 1000,
-                              minWidth: '160px',
-                              maxWidth: '200px',
-                              maxHeight: '300px',
-                              marginTop: '4px',
-                              overflowY: 'auto',
-                              overflowX: 'hidden',
-                              scrollbarWidth: 'thin',
-                              scrollbarColor: '#cbd5e1 #f1f5f9'
-                            }}>
-                              <div style={{ padding: '4px 0' }}>
-                                <button
-                                  onClick={() => {
-                                    setSelectedUser(userItem);
-                                    setShowUserDetails(true);
-                                    setDropdownOpen(null);
-                                  }}
-                                  style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    background: 'none',
-                                    border: 'none',
-                                    textAlign: 'left',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    color: '#374151',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px'
-                                  }}
-                                  onMouseEnter={(e) => e.target.style.background = '#f3f4f6'}
-                                  onMouseLeave={(e) => e.target.style.background = 'none'}
-                                >
-                                  👁️ View Details
-                                </button>
-                                
-                                <button
-                                  onClick={() => {
-                                    openEditForm(userItem);
-                                    setDropdownOpen(null);
-                                  }}
-                                  style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    background: 'none',
-                                    border: 'none',
-                                    textAlign: 'left',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    color: '#374151',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px'
-                                  }}
-                                  onMouseEnter={(e) => e.target.style.background = '#f3f4f6'}
-                                  onMouseLeave={(e) => e.target.style.background = 'none'}
-                                >
-                                  ✏️ Edit User
-                                </button>
-                                
-                                {userItem.role === 'driver' && userItem.approvalStatus === 'pending' && (
-                                  <>
-                                    <button
-                                      onClick={() => {
-                                        handleUserAction(userItem._id, 'approved');
-                                        setDropdownOpen(null);
-                                      }}
-                                      disabled={actionLoading}
-                                      style={{
-                                        width: '100%',
-                                        padding: '8px 12px',
-                                        background: 'none',
-                                        border: 'none',
-                                        textAlign: 'left',
-                                        cursor: actionLoading ? 'not-allowed' : 'pointer',
-                                        fontSize: '14px',
-                                        color: '#10b981',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        opacity: actionLoading ? 0.6 : 1
-                                      }}
-                                      onMouseEnter={(e) => !actionLoading && (e.target.style.background = '#f0fdf4')}
-                                      onMouseLeave={(e) => e.target.style.background = 'none'}
-                                    >
-                                      ✅ Approve Driver
-                                    </button>
-                                    
-                                    <button
-                                      onClick={() => {
-                                        handleUserAction(userItem._id, 'rejected');
-                                        setDropdownOpen(null);
-                                      }}
-                                      disabled={actionLoading}
-                                      style={{
-                                        width: '100%',
-                                        padding: '8px 12px',
-                                        background: 'none',
-                                        border: 'none',
-                                        textAlign: 'left',
-                                        cursor: actionLoading ? 'not-allowed' : 'pointer',
-                                        fontSize: '14px',
-                                        color: '#ef4444',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                        opacity: actionLoading ? 0.6 : 1
-                                      }}
-                                      onMouseEnter={(e) => !actionLoading && (e.target.style.background = '#fef2f2')}
-                                      onMouseLeave={(e) => e.target.style.background = 'none'}
-                                    >
-                                      ❌ Reject Driver
-                                    </button>
-                                  </>
-                                )}
-                                
-                                <button
-                                  onClick={() => {
-                                    handleUserToggle(userItem._id, !userItem.isActive);
-                                    setDropdownOpen(null);
-                                  }}
-                                  disabled={actionLoading}
-                                  style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    background: 'none',
-                                    border: 'none',
-                                    textAlign: 'left',
-                                    cursor: actionLoading ? 'not-allowed' : 'pointer',
-                                    fontSize: '14px',
-                                    color: userItem.isActive ? '#f59e0b' : '#10b981',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    opacity: actionLoading ? 0.6 : 1
-                                  }}
-                                  onMouseEnter={(e) => !actionLoading && (e.target.style.background = userItem.isActive ? '#fffbeb' : '#f0fdf4')}
-                                  onMouseLeave={(e) => e.target.style.background = 'none'}
-                                >
-                                  {userItem.isActive ? '⏸️ Deactivate' : '▶️ Activate'}
-                                </button>
-                                
-                                <div style={{ borderTop: '1px solid #e5e7eb', margin: '4px 0' }}></div>
-                                
-                                <button
-                                  onClick={() => {
-                                    handleDeleteUser(userItem._id, false);
-                                    setDropdownOpen(null);
-                                  }}
-                                  disabled={actionLoading}
-                                  style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    background: 'none',
-                                    border: 'none',
-                                    textAlign: 'left',
-                                    cursor: actionLoading ? 'not-allowed' : 'pointer',
-                                    fontSize: '14px',
-                                    color: '#f59e0b',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    opacity: actionLoading ? 0.6 : 1
-                                  }}
-                                  onMouseEnter={(e) => !actionLoading && (e.target.style.background = '#fffbeb')}
-                                  onMouseLeave={(e) => e.target.style.background = 'none'}
-                                >
-                                  🚫 Deactivate User
-                                </button>
-                                
-                                <button
-                                  onClick={() => {
-                                    handleDeleteUser(userItem._id, true);
-                                    setDropdownOpen(null);
-                                  }}
-                                  disabled={actionLoading}
-                                  style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    background: 'none',
-                                    border: 'none',
-                                    textAlign: 'left',
-                                    cursor: actionLoading ? 'not-allowed' : 'pointer',
-                                    fontSize: '14px',
-                                    color: '#ef4444',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    opacity: actionLoading ? 0.6 : 1
-                                  }}
-                                  onMouseEnter={(e) => !actionLoading && (e.target.style.background = '#fef2f2')}
-                                  onMouseLeave={(e) => e.target.style.background = 'none'}
-                                >
-                                  🗑️ Permanently Delete
-                                </button>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -1649,6 +1442,277 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
           </div>
         )}
       </div>
+
+      {/* Fixed-position dropdown (prevents table from scrolling when interacting) */}
+      {user.role === 'admin' && dropdownOpen && (
+        <div
+          className="um-fixed-dropdown"
+          data-dropdown-id={dropdownOpen}
+          style={{
+            position: 'fixed',
+            top: `${dropdownPos.top}px`,
+            left: `${dropdownPos.left}px`,
+            background: 'white',
+            border: '1px solid #e5e7eb',
+            borderRadius: '10px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            zIndex: 900,
+            minWidth: '200px',
+            maxWidth: '260px',
+            maxHeight: '320px',
+            overflowY: 'auto',
+            overscrollBehavior: 'contain',
+          }}
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
+          {(() => {
+            const userItem = filteredUsers.find(u => u._id === dropdownOpen);
+            if (!userItem) return null;
+            return (
+              <div style={{ padding: '6px 0' }}>
+                <button
+                  onClick={() => {
+                    setSelectedUser(userItem);
+                    setShowUserDetails(true);
+                    setDropdownOpen(null);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    color: '#374151'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                >
+                  👁️ View Details
+                </button>
+
+                <button
+                  onClick={() => {
+                    openEditForm(userItem);
+                    setDropdownOpen(null);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    color: '#374151'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                >
+                  ✏️ Edit User
+                </button>
+
+                {userItem.role === 'driver' && userItem.approvalStatus === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleUserAction(userItem._id, 'approved');
+                        setDropdownOpen(null);
+                      }}
+                      disabled={actionLoading}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        background: 'none',
+                        border: 'none',
+                        textAlign: 'left',
+                        cursor: actionLoading ? 'not-allowed' : 'pointer',
+                        fontSize: '14px',
+                        color: '#10b981',
+                        opacity: actionLoading ? 0.6 : 1
+                      }}
+                      onMouseEnter={(e) => !actionLoading && (e.currentTarget.style.background = '#f0fdf4')}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                    >
+                      ✅ Approve Driver
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        handleUserAction(userItem._id, 'rejected');
+                        setDropdownOpen(null);
+                      }}
+                      disabled={actionLoading}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        background: 'none',
+                        border: 'none',
+                        textAlign: 'left',
+                        cursor: actionLoading ? 'not-allowed' : 'pointer',
+                        fontSize: '14px',
+                        color: '#ef4444',
+                        opacity: actionLoading ? 0.6 : 1
+                      }}
+                      onMouseEnter={(e) => !actionLoading && (e.currentTarget.style.background = '#fef2f2')}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                    >
+                      ❌ Reject Driver
+                    </button>
+                  </>
+                )}
+
+                <button
+                  onClick={() => {
+                    handleUserToggle(userItem._id, !userItem.isActive);
+                    setDropdownOpen(null);
+                  }}
+                  disabled={actionLoading}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: actionLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    color: userItem.isActive ? '#f59e0b' : '#10b981',
+                    opacity: actionLoading ? 0.6 : 1
+                  }}
+                  onMouseEnter={(e) => !actionLoading && (e.currentTarget.style.background = userItem.isActive ? '#fffbeb' : '#f0fdf4')}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                >
+                  {userItem.isActive ? '⏸️ Deactivate' : '▶️ Activate'}
+                </button>
+
+                <div style={{ borderTop: '1px solid #e5e7eb', margin: '6px 0' }}></div>
+
+                <button
+                  onClick={() => {
+                    handleDeleteUser(userItem._id, false);
+                    setDropdownOpen(null);
+                  }}
+                  disabled={actionLoading}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: actionLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    color: '#f59e0b',
+                    opacity: actionLoading ? 0.6 : 1
+                  }}
+                  onMouseEnter={(e) => !actionLoading && (e.currentTarget.style.background = '#fffbeb')}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                >
+                  🚫 Deactivate User
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleDeleteUser(userItem._id, true);
+                    setDropdownOpen(null);
+                  }}
+                  disabled={actionLoading}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    cursor: actionLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    color: '#ef4444',
+                    opacity: actionLoading ? 0.6 : 1
+                  }}
+                  onMouseEnter={(e) => !actionLoading && (e.currentTarget.style.background = '#fef2f2')}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                >
+                  🗑️ Permanently Delete
+                </button>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Floating Action Button (FAB) */}
+      {/* Fixed-position action button that stays anchored to viewport. Includes mini scroll-to-top when scrolled. */}
+      {user.role === 'admin' && !showUserForm && !showUserDetails && (
+        <div
+          ref={fabRef}
+          style={{
+            position: 'fixed',
+            bottom: `calc(${fabOffset}px + env(safe-area-inset-bottom, 0px))`,
+            right: '16px',
+            zIndex: 900,
+            display: 'flex',
+            gap: '12px',
+            alignItems: 'center'
+          }}
+          aria-hidden={showUserForm || showUserDetails}
+        >
+          <button
+            type="button"
+            className="um-fab"
+            aria-label="Create new user"
+            title="Create new user"
+            onClick={openCreateForm}
+            style={{
+              height: 'clamp(44px, 7.5vw, 56px)',
+              padding: '0 18px',
+              fontSize: 'clamp(14px, 3.5vw, 16px)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontWeight: '600',
+              willChange: 'transform'
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openCreateForm();
+              }
+            }}
+          >
+            ➕ Create User
+          </button>
+
+          {isScrolled && (
+            <button
+              type="button"
+              className="um-fab-mini"
+              aria-label="Scroll to top"
+              title="Scroll to top"
+              onClick={() => {
+                const el = scrollRef.current;
+                if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              style={{
+                height: 'clamp(40px, 6.5vw, 48px)',
+                width: 'clamp(40px, 6.5vw, 48px)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                willChange: 'transform'
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  const el = scrollRef.current;
+                  if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
+            >
+              ⬆️
+            </button>
+          )}
+        </div>
+      )}
 
       {/* CSS for spinner animation */}
       <style>{`

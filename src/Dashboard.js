@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import api from './API';
+import { reverseGeocode, toHumanAddress } from './geocoding';
 import 'leaflet/dist/leaflet.css';
 import { io } from 'socket.io-client';
 
@@ -34,6 +35,16 @@ function MapUpdater({ center }) {
   return null;
 }
 
+function MapResizer({ trigger }) {
+  const map = useMap();
+  useEffect(() => {
+    setTimeout(() => {
+      try { map.invalidateSize(); } catch {}
+    }, 0);
+  }, [trigger, map]);
+  return null;
+}
+
 function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserManagement, onNavigateToFeedbackAdmin, onNavigateToNotifications, onNavigateToEmergency }) {
   const [drivers, setDrivers] = useState([]);
   const [driverMap, setDriverMap] = useState({});
@@ -42,13 +53,20 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [socketConnected, setSocketConnected] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState(null);
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(0);
+  const panelRef = useRef(null);
+  const [userAddress, setUserAddress] = useState('');
 
   // Get user's current location
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation([position.coords.latitude, position.coords.longitude]);
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          setUserLocation([lat, lon]);
+          try { const addr = await reverseGeocode(lat, lon); setUserAddress(addr); } catch {}
         },
         (error) => {
           console.log('Geolocation error:', error);
@@ -88,6 +106,14 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
     const interval = setInterval(fetchDrivers, 30000);
     return () => clearInterval(interval);
   }, [userLocation]);
+
+  useEffect(() => {
+    const count = drivers.filter(d => {
+      const seen = lastSeen[d._id];
+      return seen && Date.now() - seen < 30000;
+    }).length;
+    window.dispatchEvent(new CustomEvent('dashboard:onlineDriversCount', { detail: { count } }));
+  }, [drivers, lastSeen]);
 
   // Socket: real-time driver updates
   useEffect(() => {
@@ -140,128 +166,26 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
     };
   }, []);
 
+  useEffect(() => {
+    const measure = () => {
+      const h = panelRef.current ? panelRef.current.offsetHeight : 0;
+      setBottomPanelHeight(h || 0);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [selectedDriver]);
+
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
-      <div style={{ 
-        background: '#1f2937', 
-        color: 'white', 
-        padding: '16px 24px', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '24px' }}>EyyTrike - Driver Locations</h1>
-          <p style={{ margin: '4px 0 0 0', opacity: 0.8 }}>
-            Welcome, {user.firstName} {user.lastName}
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '14px', opacity: 0.8 }}>Available Drivers</div>
-            <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
-              {isLoading ? '...' : drivers.length}
-            </div>
-          </div>
-          <button
-            onClick={onNavigateToAnalytics}
-            style={{
-              padding: '6px 12px',
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            📊 Analytics
-          </button>
-          <button
-            onClick={onNavigateToNotifications}
-            style={{
-              padding: '6px 12px',
-              background: '#0ea5e9',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            🔔 Notifications
-          </button>
-          <button
-            onClick={onNavigateToEmergency}
-            style={{
-              padding: '6px 12px',
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            🆘 Emergency
-          </button>
-          <button
-            onClick={onNavigateToUserManagement}
-            style={{
-              padding: '6px 12px',
-              background: '#8b5cf6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            👥 Users
-          </button>
-          {user.role === 'admin' && (
-            <button
-              onClick={onNavigateToFeedbackAdmin}
-              style={{
-                padding: '6px 12px',
-                background: '#f59e0b',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              🛡️ Moderate
-            </button>
-          )}
-          <button
-            onClick={onLogout}
-            style={{
-              padding: '6px 12px',
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content - Full Map */}
       <div style={{ flex: 1, position: 'relative' }}>
         <MapContainer
           center={userLocation}
           zoom={13}
-          style={{ height: '100%', width: '100%' }}
+          style={{ height: selectedDriver ? `calc(100% - ${bottomPanelHeight}px)` : '100%', width: '100%', transition: 'height 150ms ease' }}
         >
           <MapUpdater center={userLocation} />
+          <MapResizer trigger={`${selectedDriver ? bottomPanelHeight : 0}`} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -276,6 +200,20 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
               key={driver._id}
               position={[driver.location.coordinates[1], driver.location.coordinates[0]]}
               icon={driverIcon}
+              eventHandlers={{
+                click: () => {
+                  const info = driverMap[driver._id];
+                  setSelectedDriver({
+                    _id: driver._id,
+                    firstName: driver.firstName,
+                    lastName: driver.lastName,
+                    phoneNumber: driver.phoneNumber,
+                    rating: driver.rating,
+                    status: info?.status || (driver.isAvailable ? 'available' : 'on-trip'),
+                    coords: driver.location.coordinates,
+                  });
+                }
+              }}
             >
               <Popup>
                 <div>
@@ -381,6 +319,8 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
         borderRadius: '8px',
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
+        <div style={{ fontSize: '14px', color: '#6b7280' }}>Your Location</div>
+        <div style={{ fontSize: '12px', color: '#374151', marginBottom: 6, maxWidth: 300, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{toHumanAddress(userAddress, userLocation[0], userLocation[1])}</div>
         <div style={{ fontSize: '14px', color: '#6b7280' }}>Available Drivers</div>
         <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>
           {isLoading ? '...' : drivers.filter(d => {
@@ -405,6 +345,20 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
           Real-time connection lost. Trying to reconnect...
         </div>
       )}
+
+      {/* Selected driver bottom panel */}
+      {selectedDriver && (
+        <div ref={panelRef} role="region" aria-label="Selected driver" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 1500, background: 'rgba(17,24,39,0.95)', color: 'white', borderTop: '1px solid #374151', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', animation: 'fadeIn 120ms ease-out' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontWeight: 700 }}>{selectedDriver.firstName} {selectedDriver.lastName}</div>
+            <div style={{ color: '#9ca3af' }}>📞 {selectedDriver.phoneNumber}</div>
+            <div style={{ color: '#9ca3af' }}>⭐ {selectedDriver.rating ? selectedDriver.rating.toFixed(1) : 'No rating'}</div>
+            <div style={{ color: selectedDriver.status === 'available' ? '#10b981' : '#f59e0b' }}>{selectedDriver.status}</div>
+            <div style={{ color: '#9ca3af' }}>📍 {selectedDriver.coords[1].toFixed(5)}, {selectedDriver.coords[0].toFixed(5)}</div>
+          </div>
+          <button onClick={() => setSelectedDriver(null)} style={{ padding: '6px 10px', background: '#ef4444', color: 'white', borderRadius: 6 }}>Close</button>
+        </div>
+      )}
     </div>
 
       {/* CSS for spinner animation */}
@@ -413,6 +367,7 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
       `}</style>
     </div>
   );

@@ -161,69 +161,6 @@ function Analytics({ user, onLogout, onNavigateToDashboard, onNavigateToUserMana
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f9fafb' }}>
-      {/* Header */}
-      <div style={{ 
-        background: '#1f2937', 
-        color: 'white', 
-        padding: '16px 24px', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-      }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '24px' }}>📊 Earnings Analytics</h1>
-          <p style={{ margin: '4px 0 0 0', opacity: 0.8 }}>
-            {user.firstName} {user.lastName} - {user.role === 'driver' ? 'Driver' : 'Commuter'} Analytics
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={onNavigateToDashboard}
-            style={{
-              padding: '6px 12px',
-              background: '#3B82F6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            🗺️ Map
-          </button>
-          <button
-            onClick={onNavigateToUserManagement}
-            style={{
-              padding: '6px 12px',
-              background: '#8b5cf6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            👥 Users
-          </button>
-          <button
-            onClick={onLogout}
-            style={{
-              padding: '6px 12px',
-              background: '#ef4444',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content */}
       <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
         {isLoading ? (
           <div style={{ 

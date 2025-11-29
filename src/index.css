@@ -11,3 +11,38 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+:root {
+  --brand-green-700: #15803d;
+  --brand-green-600: #16a34a;
+  --brand-green-500: #22c55e;
+  --brand-green-400: #34d399;
+  --brand-yellow-600: #ca8a04;
+  --brand-yellow-500: #f59e0b;
+  --brand-yellow-400: #fbbf24;
+  --surface: #ffffff;
+  --surface-muted: #f7fafc;
+  --text-primary: #0f172a;
+  --text-muted: #6b7280;
+  --border: #e5e7eb;
+  --brand-primary: var(--brand-green-600);
+  --brand-secondary: var(--brand-yellow-500);
+  --brand-accent: var(--brand-yellow-400);
+  --nav-bg: #0f3b21;
+}
+
+body {
+  background: linear-gradient(180deg, #f0fdf4, #fefce8);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #0b1320;
+    --surface-muted: #0a0f19;
+    --text-primary: #f8fafc;
+    --text-muted: #cbd5e1;
+    --border: #1f2937;
+    --nav-bg: #072813;
+  }
+  body { background: linear-gradient(180deg, #052e16, #422006); }
+}

@@ -300,6 +300,44 @@ class APIService {
   async sendEmergencyAlert(payload) {
     return await this.makeRequest('/emergency/alert', { method: 'POST', body: JSON.stringify(payload) });
   }
+  async getEmergencyDriverDetails(driverId) {
+    return await this.makeRequest(`/emergency/driver/${driverId}/details`);
+  }
+  async reportAccident(driverId, location = {}, vehicle = {}) {
+    return await this.makeRequest('/emergency/accident', { method: 'POST', body: JSON.stringify({ driverId, location, vehicle }) });
+  }
+
+  async listContactsV1({ page = 1, limit = 20, includeDeleted = false } = {}) {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit), includeDeleted: String(includeDeleted) })
+    const data = await this.makeRequest(`/v1/contacts?${params.toString()}`)
+    const items = Array.isArray(data?.data) ? data.data.map(d => ({ id: d.id, ...(d.attributes || {}) })) : []
+    return { items, meta: data?.meta || {} }
+  }
+  async createContactV1(payload) {
+    const data = await this.makeRequest('/v1/contacts', { method: 'POST', body: JSON.stringify(payload) })
+    const d = data?.data
+    return d ? { id: d.id, ...(d.attributes || {}) } : null
+  }
+  async getContactV1(id) {
+    const data = await this.makeRequest(`/v1/contacts/${id}`)
+    const d = data?.data
+    return d ? { id: d.id, ...(d.attributes || {}) } : null
+  }
+  async updateContactV1(id, patch) {
+    const data = await this.makeRequest(`/v1/contacts/${id}`, { method: 'PUT', body: JSON.stringify(patch) })
+    const d = data?.data
+    return d ? { id: d.id, ...(d.attributes || {}) } : null
+  }
+  async deleteContactV1(id) {
+    const data = await this.makeRequest(`/v1/contacts/${id}`, { method: 'DELETE' })
+    const d = data?.data
+    return d ? { id: d.id, ...(d.attributes || {}) } : null
+  }
+  async listContactsByTypeV1(type) {
+    const data = await this.makeRequest(`/v1/contacts/user/${encodeURIComponent(type)}`)
+    const items = Array.isArray(data?.data) ? data.data.map(d => ({ id: d.id, ...(d.attributes || {}) })) : []
+    return items
+  }
 
   // Payment Methods
   async getPayments() {
