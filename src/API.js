@@ -75,6 +75,7 @@ class APIService {
     }
   }
 
+
   decodeToken(token) {
     try {
       const payload = token.split('.')[1];
@@ -330,6 +331,7 @@ class APIService {
   async getPaymentById(paymentId) {
     return await this.makeRequest(`/payments/${paymentId}`);
   }
+
 
   // Wallet Methods
   async getWallet() {
