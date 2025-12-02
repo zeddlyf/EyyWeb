@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from './API';
 
 function Analytics({ user, onLogout, onNavigateToDashboard, onNavigateToUserManagement }) {
@@ -19,7 +19,7 @@ function Analytics({ user, onLogout, onNavigateToDashboard, onNavigateToUserMana
   const [timeRange, setTimeRange] = useState('week'); // week, month, year
 
   // Fetch analytics data
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -130,11 +130,11 @@ function Analytics({ user, onLogout, onNavigateToDashboard, onNavigateToUserMana
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchAnalytics();
-  }, [user, timeRange]);
+  }, [fetchAnalytics]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-PH', {

@@ -98,7 +98,7 @@ export default function Overlay({ open, onClose, title = 'Overlay', children, id
           )}
           <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
             <button data-overlay-focus="true" style={{ padding: '8px 12px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: 6 }} onClick={onClose}>Close</button>
-            <a data-overlay-focus="true" href="#" onClick={(e) => e.preventDefault()} style={{ padding: '8px 12px', background: '#10b981', color: 'white', borderRadius: 6, textDecoration: 'none' }}>Learn more</a>
+            <button data-overlay-focus="true" type="button" style={{ padding: '8px 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: 6 }}>Learn more</button>
           </div>
         </div>
       </div>

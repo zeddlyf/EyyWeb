@@ -50,7 +50,7 @@ function AdminRegister({ onRegistered, onSwitchToLogin }) {
     setIsLoading(true);
 
     try {
-      const data = await api.registerAdmin(formData);
+      await api.registerAdmin(formData);
       setSuccess('Admin account created successfully! The admin can now login with their credentials.');
       // Reset form
       setFormData({

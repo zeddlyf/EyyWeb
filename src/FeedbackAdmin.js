@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import api from './API';
 
 export default function FeedbackAdmin({ user, onLogout, onNavigateToDashboard }) {
@@ -7,22 +7,20 @@ export default function FeedbackAdmin({ user, onLogout, onNavigateToDashboard })
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState('all');
   const [sort, setSort] = useState('newest');
-  const [driverQuery, setDriverQuery] = useState('');
-  const [drivers, setDrivers] = useState([]);
-  const [selectedDriverId, setSelectedDriverId] = useState('');
+  const [selectedDriverId] = useState('');
 
   const normalizedStatus = status === 'all' ? '' : status;
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const res = await api.listFeedback(selectedDriverId || undefined, { status: normalizedStatus, sort, page: 1, limit: 50 });
       setItems(res.items || []);
     } catch (err) {
       setError('Failed to load feedback: ' + err.message);
     }
-  };
+  }, [normalizedStatus, sort, selectedDriverId]);
 
-  useEffect(() => { load(); }, [status, sort, selectedDriverId]);
+  useEffect(() => { load(); }, [load]);
 
   const approve = async (rideId) => {
     try {

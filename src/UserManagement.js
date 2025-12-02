@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import api from './API';
 
 function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics, initialSearch }) {
@@ -42,7 +42,7 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
 
   // Fetch all users from the backend
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true);
       setError('');
@@ -99,11 +99,11 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   useEffect(() => {
     if (typeof initialSearch === 'string') {

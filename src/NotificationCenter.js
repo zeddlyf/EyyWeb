@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import api from './API';
 import { io } from 'socket.io-client';
 
@@ -24,34 +24,31 @@ function iconForType(t) {
 export default function NotificationCenter({ user, onLogout, onNavigateToDashboard }) {
   const [items, setItems] = useState([]);
   const [error, setError] = useState('');
-  const [unreadOnly, setUnreadOnly] = useState(false);
-  const [badge, setBadge] = useState(0);
+  const [unreadOnly] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const res = await api.getNotifications({ unread: unreadOnly });
       setItems(res.items || []);
-      setBadge((res.items || []).filter(i => !i.read).length);
       setError('');
     } catch (err) {
       setError('Failed to load notifications: ' + err.message);
     }
-  };
+  }, [unreadOnly]);
 
-  useEffect(() => { load(); }, [unreadOnly]);
+  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     const token = api.getToken();
     const socket = io(api.baseURL.replace('/api',''), { transports: ['websocket'], auth: token ? { token } : undefined });
     socket.on('notification', (note) => {
       setItems(prev => [note, ...prev]);
-      setBadge(b => b + (note.read ? 0 : 1));
     });
     return () => socket.disconnect();
   }, []);
 
   const markRead = async (id) => {
-    try { await api.markNotificationRead(id); setItems(prev => prev.map(i => i._id === id ? { ...i, read: true } : i)); setBadge(b => Math.max(0, b - 1)); } catch {}
+    try { await api.markNotificationRead(id); setItems(prev => prev.map(i => i._id === id ? { ...i, read: true } : i)); } catch {}
   };
 
   const grouped = groupByDate(items);
