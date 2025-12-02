@@ -11,8 +11,7 @@ import Login from './Login';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [currentView, setCurrentView] = useState('login'); // 'login', 'register', 'adminRegister', 'dashboard', 'analytics', 'users', 'feedbackAdmin', 'notifications', 'emergency'
-  const [sessionMessage, setSessionMessage] = useState('');
+  const [currentView, setCurrentView] = useState('login'); // 'login', 'register', 'adminRegister', 'dashboard', 'analytics', 'users', 'feedbackAdmin', 'notifications'
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [overlayOpen, setOverlayOpen] = useState(false);
 
@@ -25,7 +24,6 @@ function App() {
 
   useEffect(() => {
     const handler = () => {
-      setSessionMessage('Your session has expired. Please login again.');
       api.logout();
       setUser(null);
       setCurrentView('login');
@@ -119,16 +117,7 @@ function App() {
       );
     }
 
-    if (currentView === 'emergency') {
-      const EmergencyCenter = require('./EmergencyCenter').default;
-      return (
-        <EmergencyCenter
-          user={user}
-          onLogout={handleLogout}
-          onNavigateToDashboard={() => setCurrentView('dashboard')}
-        />
-      );
-    }
+    
 
     return (
       <Dashboard 
@@ -138,7 +127,6 @@ function App() {
         onNavigateToUserManagement={() => setCurrentView('users')}
         onNavigateToFeedbackAdmin={() => setCurrentView('feedbackAdmin')}
         onNavigateToNotifications={() => setCurrentView('notifications')}
-        onNavigateToEmergency={() => setCurrentView('emergency')}
       />
     );
   };

@@ -45,7 +45,7 @@ function MapResizer({ trigger }) {
   return null;
 }
 
-function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserManagement, onNavigateToFeedbackAdmin, onNavigateToNotifications, onNavigateToEmergency }) {
+function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserManagement, onNavigateToFeedbackAdmin, onNavigateToNotifications }) {
   const [drivers, setDrivers] = useState([]);
   const [driverMap, setDriverMap] = useState({});
   const [lastSeen, setLastSeen] = useState({});
@@ -77,7 +77,7 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
   }, []);
 
   // Fetch nearby drivers
-  const fetchDrivers = async () => {
+  const fetchDrivers = React.useCallback(async () => {
     try {
       setIsLoading(true);
       const nearbyDrivers = await api.getNearbyDrivers(
@@ -97,15 +97,13 @@ function Dashboard({ user, onLogout, onNavigateToAnalytics, onNavigateToUserMana
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userLocation]);
 
   useEffect(() => {
     fetchDrivers();
-    
-    // Refresh driver locations every 30 seconds (fallback)
     const interval = setInterval(fetchDrivers, 30000);
     return () => clearInterval(interval);
-  }, [userLocation]);
+  }, [fetchDrivers]);
 
   useEffect(() => {
     const count = drivers.filter(d => {

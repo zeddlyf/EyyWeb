@@ -1,7 +1,7 @@
 // API Service for EyyTrike Backend Communication
 class APIService {
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+    this.baseURL = process.env.REACT_APP_API_URL
     this.token = localStorage.getItem('token');
   }
 
@@ -281,31 +281,7 @@ class APIService {
     return await this.makeRequest(`/notifications/admin/broadcast`, { method: 'POST', body: JSON.stringify({ title, body, roles }) });
   }
 
-  // Emergency
-  async getEmergencyContacts() {
-    return await this.makeRequest('/emergency/contacts');
-  }
-  async addEmergencyContact({ name, phone, priority = 1, enabled = true }) {
-    return await this.makeRequest('/emergency/contacts', { method: 'POST', body: JSON.stringify({ name, phone, priority, enabled }) });
-  }
-  async updateEmergencyContact(id, patch) {
-    return await this.makeRequest(`/emergency/contacts/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
-  }
-  async deleteEmergencyContact(id) {
-    return await this.makeRequest(`/emergency/contacts/${id}`, { method: 'DELETE' });
-  }
-  async requestEmergencyOtp() {
-    return await this.makeRequest('/emergency/request-otp', { method: 'POST' });
-  }
-  async sendEmergencyAlert(payload) {
-    return await this.makeRequest('/emergency/alert', { method: 'POST', body: JSON.stringify(payload) });
-  }
-  async getEmergencyDriverDetails(driverId) {
-    return await this.makeRequest(`/emergency/driver/${driverId}/details`);
-  }
-  async reportAccident(driverId, location = {}, vehicle = {}) {
-    return await this.makeRequest('/emergency/accident', { method: 'POST', body: JSON.stringify({ driverId, location, vehicle }) });
-  }
+  
 
   async listContactsV1({ page = 1, limit = 20, includeDeleted = false } = {}) {
     const params = new URLSearchParams({ page: String(page), limit: String(limit), includeDeleted: String(includeDeleted) })

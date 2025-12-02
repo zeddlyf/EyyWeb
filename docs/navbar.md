@@ -8,14 +8,14 @@ Reusable navigation bar for the eyyweb SPA. Provides grouped dropdown menus, glo
 
 ## Props
 - `user`: `{ firstName, lastName, role }` for display and Admin group visibility
-- `currentView`: one of `dashboard | analytics | users | feedbackAdmin | notifications | emergency`
+- `currentView`: one of `dashboard | analytics | users | feedbackAdmin | notifications`
 - `onNavigate(view)`: function to change the current view
 - `onLogout()`: function to sign out
 - `onGlobalSearch(query)`: function that receives the search string
 
 ## Groups & Items
 - Overview: Map (`dashboard`), Analytics (`analytics`)
-- Management: Users (`users`), Notifications (`notifications`), Emergency (`emergency`)
+- Management: Users (`users`), Notifications (`notifications`)
 - Admin (shown when `user.role === 'admin'`): Moderate (`feedbackAdmin`)
 
 ## Accessibility
