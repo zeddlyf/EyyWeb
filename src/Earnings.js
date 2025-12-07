@@ -38,7 +38,7 @@ function Earnings({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       
-      const data = await api.makeRequest(`/api/payments/admin/earnings?${params.toString()}`);
+      const data = await api.makeRequest(`/payments/admin/earnings?${params.toString()}`);
       setEarnings(data);
     } catch (err) {
       setError('Failed to load earnings: ' + err.message);
