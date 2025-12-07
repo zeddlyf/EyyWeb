@@ -274,7 +274,48 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
       setError('');
       setSuccessMessage('');
       
-      await api.createUser(formData);
+      // Validate required fields
+      if (!formData.firstName || !formData.lastName || !formData.email || !formData.phoneNumber) {
+        setError('Please fill in all required fields');
+        setActionLoading(false);
+        return;
+      }
+      
+      if (!formData.password) {
+        setError('Password is required for new users');
+        setActionLoading(false);
+        return;
+      }
+      
+      if (formData.role === 'driver' && !formData.licenseNumber) {
+        setError('License number is required for drivers');
+        setActionLoading(false);
+        return;
+      }
+      
+      if (!formData.address.city || !formData.address.province) {
+        setError('City and Province are required');
+        setActionLoading(false);
+        return;
+      }
+      
+      // Prepare user data
+      const userData = {
+        ...formData,
+        // Ensure address is properly formatted
+        address: {
+          ...formData.address,
+          fullAddress: [
+            formData.address.street,
+            formData.address.city,
+            formData.address.province,
+            formData.address.postalCode,
+            formData.address.country
+          ].filter(Boolean).join(', ')
+        }
+      };
+      
+      await api.createUser(userData);
       
       // Refresh the users list
       await fetchUsers();
@@ -286,7 +327,8 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
       setSuccessMessage('User created successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setError('Failed to create user: ' + err.message);
+      console.error('Error creating user:', err);
+      setError('Failed to create user: ' + (err.message || 'Unknown error occurred'));
     } finally {
       setActionLoading(false);
     }
@@ -299,7 +341,49 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
       setError('');
       setSuccessMessage('');
       
-      await api.updateUser(editingUser._id, formData);
+      // Validate required fields
+      if (!formData.firstName || !formData.lastName || !formData.email || !formData.phoneNumber) {
+        setError('Please fill in all required fields');
+        setActionLoading(false);
+        return;
+      }
+      
+      if (formData.role === 'driver' && !formData.licenseNumber) {
+        setError('License number is required for drivers');
+        setActionLoading(false);
+        return;
+      }
+      
+      if (!formData.address.city || !formData.address.province) {
+        setError('City and Province are required');
+        setActionLoading(false);
+        return;
+      }
+      
+      // Prepare user data (exclude password if empty)
+      const userData = {
+        ...formData,
+        // Remove password if not provided
+        ...(formData.password ? { password: formData.password } : {}),
+        // Ensure address is properly formatted
+        address: {
+          ...formData.address,
+          fullAddress: [
+            formData.address.street,
+            formData.address.city,
+            formData.address.province,
+            formData.address.postalCode,
+            formData.address.country
+          ].filter(Boolean).join(', ')
+        }
+      };
+      
+      // Remove password from data if it's empty (don't update password)
+      if (!formData.password) {
+        delete userData.password;
+      }
+      
+      await api.updateUser(editingUser._id, userData);
       
       // Refresh the users list
       await fetchUsers();
@@ -312,7 +396,8 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
       setSuccessMessage('User updated successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setError('Failed to update user: ' + err.message);
+      console.error('Error updating user:', err);
+      setError('Failed to update user: ' + (err.message || 'Unknown error occurred'));
     } finally {
       setActionLoading(false);
     }
@@ -1067,49 +1152,140 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
 
         {/* User Form Modal - Only show for admin users */}
         {user.role === 'admin' && showUserForm && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              background: 'white',
-              borderRadius: '12px',
-              padding: '24px',
-              maxWidth: '600px',
-              width: '90%',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0, fontSize: '20px', color: '#1f2937' }}>
-                  {editingUser ? 'Edit User' : 'Create New User'}
-                </h3>
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0, 0, 0, 0.6)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '20px',
+              animation: 'fadeIn 0.2s ease-out'
+            }}
+            onClick={(e) => {
+              // Close modal when clicking outside
+              if (e.target === e.currentTarget && !actionLoading) {
+                setShowUserForm(false);
+                setEditingUser(null);
+                resetForm();
+              }
+            }}
+          >
+            <div 
+              style={{
+                background: 'white',
+                borderRadius: '16px',
+                padding: '0',
+                maxWidth: '700px',
+                width: '100%',
+                maxHeight: '90vh',
+                overflow: 'hidden',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column',
+                animation: 'slideUp 0.3s ease-out'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                padding: '24px 28px',
+                borderTopLeftRadius: '16px',
+                borderTopRightRadius: '16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <h3 style={{ 
+                    margin: 0, 
+                    fontSize: '24px', 
+                    color: 'white',
+                    fontWeight: '700',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}>
+                    {editingUser ? '✏️ Edit User' : '➕ Create New User'}
+                  </h3>
+                  <p style={{
+                    margin: '4px 0 0 0',
+                    fontSize: '14px',
+                    color: 'rgba(255, 255, 255, 0.9)'
+                  }}>
+                    {editingUser ? 'Update user information' : 'Add a new user to the system'}
+                  </p>
+                </div>
                 <button
                   onClick={() => {
-                    setShowUserForm(false);
-                    setEditingUser(null);
-                    resetForm();
+                    if (!actionLoading) {
+                      setShowUserForm(false);
+                      setEditingUser(null);
+                      resetForm();
+                      setError('');
+                    }
                   }}
+                  disabled={actionLoading}
                   style={{
-                    background: 'none',
+                    background: 'rgba(255, 255, 255, 0.2)',
                     border: 'none',
-                    fontSize: '24px',
-                    cursor: 'pointer',
-                    color: '#6b7280'
+                    fontSize: '28px',
+                    cursor: actionLoading ? 'not-allowed' : 'pointer',
+                    color: 'white',
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background 0.2s',
+                    opacity: actionLoading ? 0.5 : 1
                   }}
+                  onMouseEnter={(e) => {
+                    if (!actionLoading) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                  }}
+                  aria-label="Close modal"
                 >
                   ×
                 </button>
               </div>
+              
+              {/* Scrollable Content */}
+              <div style={{
+                padding: '28px',
+                overflowY: 'auto',
+                flex: 1
+              }}>
+                {/* Error Message in Modal */}
+                {error && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+                    color: '#991b1b',
+                    padding: '14px 18px',
+                    borderRadius: '10px',
+                    border: '1px solid #fca5a5',
+                    marginBottom: '20px',
+                    fontSize: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+                  }}>
+                    <span style={{ fontSize: '18px' }}>⚠️</span>
+                    <span style={{ fontWeight: '500' }}>{error}</span>
+                  </div>
+                )}
 
               <form onSubmit={(e) => {
                 e.preventDefault();
@@ -1119,303 +1295,701 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                   handleCreateUser();
                 }
               }}>
-                <div style={{ display: 'grid', gap: '16px' }}>
-                  {/* Name Fields */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div>
-                      <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                        First Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px'
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                        Last Name *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px'
-                        }}
-                      />
-                    </div>
-                  </div>
-
+                <div style={{ display: 'grid', gap: '20px' }}>
+                  {/* Personal Information Section */}
                   <div>
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                      Middle Name
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.middleName}
-                      onChange={(e) => setFormData({...formData, middleName: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </div>
+                    <h4 style={{
+                      margin: '0 0 16px 0',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1f2937',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      paddingBottom: '8px',
+                      borderBottom: '2px solid #e5e7eb'
+                    }}>
+                      👤 Personal Information
+                    </h4>
+                    <div style={{ display: 'grid', gap: '16px' }}>
+                      {/* Name Fields */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                          <label style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: '#374151', 
+                            display: 'block', 
+                            marginBottom: '6px' 
+                          }}>
+                            First Name <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.firstName}
+                            onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                            required
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              border: '2px solid #e5e7eb',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              transition: 'all 0.2s',
+                              background: '#fafafa'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = '#10b981';
+                              e.target.style.background = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = '#e5e7eb';
+                              e.target.style.background = '#fafafa';
+                              e.target.style.boxShadow = 'none';
+                            }}
+                            placeholder="Enter first name"
+                          />
+                        </div>
+                        <div>
+                          <label style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: '#374151', 
+                            display: 'block', 
+                            marginBottom: '6px' 
+                          }}>
+                            Last Name <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.lastName}
+                            onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                            required
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              border: '2px solid #e5e7eb',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              transition: 'all 0.2s',
+                              background: '#fafafa'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = '#10b981';
+                              e.target.style.background = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = '#e5e7eb';
+                              e.target.style.background = '#fafafa';
+                              e.target.style.boxShadow = 'none';
+                            }}
+                            placeholder="Enter last name"
+                          />
+                        </div>
+                      </div>
 
-                  {/* Contact Fields */}
-                  <div>
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      required
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                      Phone Number *
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phoneNumber}
-                      onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
-                      required
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        fontSize: '14px'
-                      }}
-                    />
-                  </div>
-
-                  {/* Password Field */}
-                  {!editingUser && (
-                    <div>
-                      <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                        Password *
-                      </label>
-                      <input
-                        type="password"
-                        value={formData.password}
-                        onChange={(e) => setFormData({...formData, password: e.target.value})}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px'
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  {/* Role and License */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <div>
-                      <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                        Role *
-                      </label>
-                      <select
-                        value={formData.role}
-                        onChange={(e) => setFormData({...formData, role: e.target.value})}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px',
-                          background: 'white'
-                        }}
-                      >
-                        <option value="commuter">Commuter</option>
-                        <option value="driver">Driver</option>
-                      </select>
-                    </div>
-                    {formData.role === 'driver' && (
                       <div>
-                        <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                          License Number *
+                        <label style={{ 
+                          fontSize: '13px', 
+                          fontWeight: '600', 
+                          color: '#374151', 
+                          display: 'block', 
+                          marginBottom: '6px' 
+                        }}>
+                          Middle Name
                         </label>
                         <input
                           type="text"
-                          value={formData.licenseNumber}
-                          onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}
-                          required={formData.role === 'driver'}
+                          value={formData.middleName}
+                          onChange={(e) => setFormData({...formData, middleName: e.target.value})}
                           style={{
                             width: '100%',
-                            padding: '8px 12px',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '6px',
-                            fontSize: '14px'
+                            padding: '10px 14px',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            transition: 'all 0.2s',
+                            background: '#fafafa'
                           }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = '#10b981';
+                            e.target.style.background = 'white';
+                            e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.background = '#fafafa';
+                            e.target.style.boxShadow = 'none';
+                          }}
+                          placeholder="Enter middle name (optional)"
                         />
                       </div>
-                    )}
+                    </div>
                   </div>
 
-                  {/* Address Fields */}
-                  <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '16px' }}>
-                    <h4 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#1f2937' }}>Address</h4>
+                  {/* Contact Information Section */}
+                  <div>
+                    <h4 style={{
+                      margin: '0 0 16px 0',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1f2937',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      paddingBottom: '8px',
+                      borderBottom: '2px solid #e5e7eb'
+                    }}>
+                      📧 Contact Information
+                    </h4>
+                    <div style={{ display: 'grid', gap: '16px' }}>
+                      <div>
+                        <label style={{ 
+                          fontSize: '13px', 
+                          fontWeight: '600', 
+                          color: '#374151', 
+                          display: 'block', 
+                          marginBottom: '6px' 
+                        }}>
+                          Email Address <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({...formData, email: e.target.value})}
+                          required
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            transition: 'all 0.2s',
+                            background: '#fafafa'
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = '#10b981';
+                            e.target.style.background = 'white';
+                            e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.background = '#fafafa';
+                            e.target.style.boxShadow = 'none';
+                          }}
+                          placeholder="user@example.com"
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ 
+                          fontSize: '13px', 
+                          fontWeight: '600', 
+                          color: '#374151', 
+                          display: 'block', 
+                          marginBottom: '6px' 
+                        }}>
+                          Phone Number <span style={{ color: '#ef4444' }}>*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={formData.phoneNumber}
+                          onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+                          required
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            transition: 'all 0.2s',
+                            background: '#fafafa'
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = '#10b981';
+                            e.target.style.background = 'white';
+                            e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.background = '#fafafa';
+                            e.target.style.boxShadow = 'none';
+                          }}
+                          placeholder="+63 9XX XXX XXXX"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Account Security Section */}
+                  <div>
+                    <h4 style={{
+                      margin: '0 0 16px 0',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1f2937',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      paddingBottom: '8px',
+                      borderBottom: '2px solid #e5e7eb'
+                    }}>
+                      🔒 Account Security
+                    </h4>
+                    <div style={{ display: 'grid', gap: '16px' }}>
+                      {!editingUser ? (
+                        <div>
+                          <label style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: '#374151', 
+                            display: 'block', 
+                            marginBottom: '6px' 
+                          }}>
+                            Password <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <input
+                            type="password"
+                            value={formData.password}
+                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                            required
+                            minLength={6}
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              border: '2px solid #e5e7eb',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              transition: 'all 0.2s',
+                              background: '#fafafa'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = '#10b981';
+                              e.target.style.background = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = '#e5e7eb';
+                              e.target.style.background = '#fafafa';
+                              e.target.style.boxShadow = 'none';
+                            }}
+                            placeholder="Minimum 6 characters"
+                          />
+                          <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: '#6b7280' }}>
+                            Password must be at least 6 characters long
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <label style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: '#374151', 
+                            display: 'block', 
+                            marginBottom: '6px' 
+                          }}>
+                            New Password
+                          </label>
+                          <input
+                            type="password"
+                            value={formData.password}
+                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                            minLength={6}
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              border: '2px solid #e5e7eb',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              transition: 'all 0.2s',
+                              background: '#fafafa'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = '#10b981';
+                              e.target.style.background = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = '#e5e7eb';
+                              e.target.style.background = '#fafafa';
+                              e.target.style.boxShadow = 'none';
+                            }}
+                            placeholder="Leave blank to keep current password"
+                          />
+                          <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: '#6b7280' }}>
+                            Leave blank if you don't want to change the password
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Role and License Section */}
+                  <div>
+                    <h4 style={{
+                      margin: '0 0 16px 0',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1f2937',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      paddingBottom: '8px',
+                      borderBottom: '2px solid #e5e7eb'
+                    }}>
+                      👥 Role & Permissions
+                    </h4>
+                    <div style={{ display: 'grid', gap: '16px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                          <label style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: '#374151', 
+                            display: 'block', 
+                            marginBottom: '6px' 
+                          }}>
+                            User Role <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <select
+                            value={formData.role}
+                            onChange={(e) => setFormData({...formData, role: e.target.value, licenseNumber: e.target.value === 'driver' ? formData.licenseNumber : ''})}
+                            required
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              border: '2px solid #e5e7eb',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              background: '#fafafa',
+                              transition: 'all 0.2s',
+                              cursor: 'pointer'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = '#10b981';
+                              e.target.style.background = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = '#e5e7eb';
+                              e.target.style.background = '#fafafa';
+                              e.target.style.boxShadow = 'none';
+                            }}
+                          >
+                            <option value="commuter">👤 Commuter</option>
+                            <option value="driver">🚗 Driver</option>
+                          </select>
+                        </div>
+                        {formData.role === 'driver' && (
+                          <div>
+                            <label style={{ 
+                              fontSize: '13px', 
+                              fontWeight: '600', 
+                              color: '#374151', 
+                              display: 'block', 
+                              marginBottom: '6px' 
+                            }}>
+                              License Number <span style={{ color: '#ef4444' }}>*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.licenseNumber}
+                              onChange={(e) => setFormData({...formData, licenseNumber: e.target.value})}
+                              required={formData.role === 'driver'}
+                              style={{
+                                width: '100%',
+                                padding: '10px 14px',
+                                border: '2px solid #e5e7eb',
+                                borderRadius: '8px',
+                                fontSize: '14px',
+                                transition: 'all 0.2s',
+                                background: '#fafafa'
+                              }}
+                              onFocus={(e) => {
+                                e.target.style.borderColor = '#10b981';
+                                e.target.style.background = 'white';
+                                e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                              }}
+                              onBlur={(e) => {
+                                e.target.style.borderColor = '#e5e7eb';
+                                e.target.style.background = '#fafafa';
+                                e.target.style.boxShadow = 'none';
+                              }}
+                              placeholder="Enter license number"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Address Section */}
+                  <div>
+                    <h4 style={{
+                      margin: '0 0 16px 0',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#1f2937',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      paddingBottom: '8px',
+                      borderBottom: '2px solid #e5e7eb'
+                    }}>
+                      📍 Address Information
+                    </h4>
+                    <div style={{ display: 'grid', gap: '16px' }}>
                     
-                    <div>
-                      <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                        Street
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.address.street}
-                        onChange={(e) => setFormData({
-                          ...formData, 
-                          address: {...formData.address, street: e.target.value}
-                        })}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '6px',
-                          fontSize: '14px'
-                        }}
-                      />
-                    </div>
+                      <div>
+                        <label style={{ 
+                          fontSize: '13px', 
+                          fontWeight: '600', 
+                          color: '#374151', 
+                          display: 'block', 
+                          marginBottom: '6px' 
+                        }}>
+                          Street Address
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.address.street}
+                          onChange={(e) => setFormData({
+                            ...formData, 
+                            address: {...formData.address, street: e.target.value}
+                          })}
+                          style={{
+                            width: '100%',
+                            padding: '10px 14px',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '8px',
+                            fontSize: '14px',
+                            transition: 'all 0.2s',
+                            background: '#fafafa'
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.borderColor = '#10b981';
+                            e.target.style.background = 'white';
+                            e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.borderColor = '#e5e7eb';
+                            e.target.style.background = '#fafafa';
+                            e.target.style.boxShadow = 'none';
+                          }}
+                          placeholder="Street name and number"
+                        />
+                      </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
-                      <div>
-                        <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                          City *
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.address.city}
-                          onChange={(e) => setFormData({
-                            ...formData, 
-                            address: {...formData.address, city: e.target.value}
-                          })}
-                          required
-                          style={{
-                            width: '100%',
-                            padding: '8px 12px',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '6px',
-                            fontSize: '14px'
-                          }}
-                        />
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                          <label style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: '#374151', 
+                            display: 'block', 
+                            marginBottom: '6px' 
+                          }}>
+                            City <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.address.city}
+                            onChange={(e) => setFormData({
+                              ...formData, 
+                              address: {...formData.address, city: e.target.value}
+                            })}
+                            required
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              border: '2px solid #e5e7eb',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              transition: 'all 0.2s',
+                              background: '#fafafa'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = '#10b981';
+                              e.target.style.background = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = '#e5e7eb';
+                              e.target.style.background = '#fafafa';
+                              e.target.style.boxShadow = 'none';
+                            }}
+                            placeholder="City name"
+                          />
+                        </div>
+                        <div>
+                          <label style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: '#374151', 
+                            display: 'block', 
+                            marginBottom: '6px' 
+                          }}>
+                            Province <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.address.province}
+                            onChange={(e) => setFormData({
+                              ...formData, 
+                              address: {...formData.address, province: e.target.value}
+                            })}
+                            required
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              border: '2px solid #e5e7eb',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              transition: 'all 0.2s',
+                              background: '#fafafa'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = '#10b981';
+                              e.target.style.background = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = '#e5e7eb';
+                              e.target.style.background = '#fafafa';
+                              e.target.style.boxShadow = 'none';
+                            }}
+                            placeholder="Province name"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                          Province *
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.address.province}
-                          onChange={(e) => setFormData({
-                            ...formData, 
-                            address: {...formData.address, province: e.target.value}
-                          })}
-                          required
-                          style={{
-                            width: '100%',
-                            padding: '8px 12px',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '6px',
-                            fontSize: '14px'
-                          }}
-                        />
-                      </div>
-                    </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
-                      <div>
-                        <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                          Postal Code
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.address.postalCode}
-                          onChange={(e) => setFormData({
-                            ...formData, 
-                            address: {...formData.address, postalCode: e.target.value}
-                          })}
-                          style={{
-                            width: '100%',
-                            padding: '8px 12px',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '6px',
-                            fontSize: '14px'
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>
-                          Country
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.address.country}
-                          onChange={(e) => setFormData({
-                            ...formData, 
-                            address: {...formData.address, country: e.target.value}
-                          })}
-                          style={{
-                            width: '100%',
-                            padding: '8px 12px',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '6px',
-                            fontSize: '14px'
-                          }}
-                        />
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                          <label style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: '#374151', 
+                            display: 'block', 
+                            marginBottom: '6px' 
+                          }}>
+                            Postal Code
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.address.postalCode}
+                            onChange={(e) => setFormData({
+                              ...formData, 
+                              address: {...formData.address, postalCode: e.target.value}
+                            })}
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              border: '2px solid #e5e7eb',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              transition: 'all 0.2s',
+                              background: '#fafafa'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = '#10b981';
+                              e.target.style.background = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = '#e5e7eb';
+                              e.target.style.background = '#fafafa';
+                              e.target.style.boxShadow = 'none';
+                            }}
+                            placeholder="Postal code"
+                          />
+                        </div>
+                        <div>
+                          <label style={{ 
+                            fontSize: '13px', 
+                            fontWeight: '600', 
+                            color: '#374151', 
+                            display: 'block', 
+                            marginBottom: '6px' 
+                          }}>
+                            Country
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.address.country}
+                            onChange={(e) => setFormData({
+                              ...formData, 
+                              address: {...formData.address, country: e.target.value}
+                            })}
+                            style={{
+                              width: '100%',
+                              padding: '10px 14px',
+                              border: '2px solid #e5e7eb',
+                              borderRadius: '8px',
+                              fontSize: '14px',
+                              transition: 'all 0.2s',
+                              background: '#fafafa'
+                            }}
+                            onFocus={(e) => {
+                              e.target.style.borderColor = '#10b981';
+                              e.target.style.background = 'white';
+                              e.target.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                            }}
+                            onBlur={(e) => {
+                              e.target.style.borderColor = '#e5e7eb';
+                              e.target.style.background = '#fafafa';
+                              e.target.style.boxShadow = 'none';
+                            }}
+                            placeholder="Country"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Form Actions */}
-                <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  marginTop: '28px',
+                  paddingTop: '20px',
+                  borderTop: '2px solid #e5e7eb',
+                  justifyContent: 'flex-end'
+                }}>
                   <button
                     type="button"
                     onClick={() => {
-                      setShowUserForm(false);
-                      setEditingUser(null);
-                      resetForm();
+                      if (!actionLoading) {
+                        setShowUserForm(false);
+                        setEditingUser(null);
+                        resetForm();
+                        setError('');
+                      }
                     }}
+                    disabled={actionLoading}
                     style={{
-                      padding: '8px 16px',
-                      background: '#6b7280',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '14px'
+                      padding: '12px 24px',
+                      background: '#f3f4f6',
+                      color: '#374151',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '10px',
+                      cursor: actionLoading ? 'not-allowed' : 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      opacity: actionLoading ? 0.6 : 1,
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!actionLoading) {
+                        e.currentTarget.style.background = '#e5e7eb';
+                        e.currentTarget.style.borderColor = '#d1d5db';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#f3f4f6';
+                      e.currentTarget.style.borderColor = '#e5e7eb';
                     }}
                   >
                     Cancel
@@ -1424,20 +1998,55 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                     type="submit"
                     disabled={actionLoading}
                     style={{
-                      padding: '8px 16px',
-                      background: '#3b82f6',
+                      padding: '12px 28px',
+                      background: actionLoading ? '#9ca3af' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                       color: 'white',
                       border: 'none',
-                      borderRadius: '6px',
+                      borderRadius: '10px',
                       cursor: actionLoading ? 'not-allowed' : 'pointer',
                       fontSize: '14px',
-                      opacity: actionLoading ? 0.6 : 1
+                      fontWeight: '600',
+                      opacity: actionLoading ? 0.8 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      minWidth: '150px',
+                      justifyContent: 'center',
+                      boxShadow: actionLoading ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.4)',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!actionLoading) {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.5)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = actionLoading ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.4)';
                     }}
                   >
-                    {actionLoading ? '⏳' : (editingUser ? 'Update User' : 'Create User')}
+                    {actionLoading ? (
+                      <>
+                        <div style={{
+                          width: '16px',
+                          height: '16px',
+                          border: '2px solid white',
+                          borderTop: '2px solid transparent',
+                          borderRadius: '50%',
+                          animation: 'spin 0.8s linear infinite'
+                        }}></div>
+                        {editingUser ? 'Updating...' : 'Creating...'}
+                      </>
+                    ) : (
+                      <>
+                        {editingUser ? '💾 Update User' : '✨ Create User'}
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
+              </div>
             </div>
           </div>
         )}
@@ -1714,11 +2323,25 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
         </div>
       )}
 
-      {/* CSS for spinner animation */}
+      {/* CSS for animations */}
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { 
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </div>
