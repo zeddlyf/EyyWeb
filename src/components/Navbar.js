@@ -102,7 +102,21 @@ export default function Navbar({ user, currentView, onNavigate, onLogout, onGlob
   };
 
   return (
-    <nav ref={navRef} role="navigation" aria-label="Primary" style={{ background: 'var(--nav-bg)', color: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+    <nav
+      ref={navRef}
+      role="navigation"
+      aria-label="Primary"
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 3000,
+        background: 'linear-gradient(90deg, #062c18 0%, #03160d 100%)',
+        color: 'white',
+        boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(6px)'
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
@@ -165,7 +179,18 @@ export default function Navbar({ user, currentView, onNavigate, onLogout, onGlob
           ref={burgerRef}
           role="menu"
           aria-label="Main menu"
-          style={{ position: 'absolute', left: 8, right: 8, top: 58, zIndex: 1500, background: '#111827', border: '1px solid #374151', borderRadius: 12, padding: 12, boxShadow: '0 12px 24px rgba(0,0,0,0.3)', animation: 'fadeIn 120ms ease-out' }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 2500,
+            background: 'rgba(0,0,0,0.45)',
+            backdropFilter: 'blur(8px)',
+            padding: 12,
+            display: 'flex',
+            justifyContent: 'flex-start',
+            alignItems: 'flex-start',
+            animation: 'fadeIn 120ms ease-out'
+          }}
           onKeyDown={(e) => {
             const itemsEls = Array.from(burgerRef.current?.querySelectorAll('[data-burger-item="true"]') || []);
             const i = itemsEls.indexOf(document.activeElement);
@@ -182,32 +207,57 @@ export default function Navbar({ user, currentView, onNavigate, onLogout, onGlob
             if (e.key === 'Escape') setMobileOpen(false);
           }}
         >
-          <div style={{ display: 'grid', gap: 8 }}>
-            <div style={{ fontWeight: 700, color: '#9ca3af' }}>🗺️ Overview</div>
-            {items.find(g => g.id === 'overview')?.children.map(child => (
-              <button key={child.id} data-burger-item="true" role="menuitem" onClick={() => { onNavigate(child.view); setMobileOpen(false); }} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 8, background: activeItemId === child.id ? '#1f2937' : 'transparent', color: 'white', border: 'none' }}>
-                {child.id === 'dashboard' ? '🗺️ ' : child.id === 'analytics' ? '📊 ' : ''}{child.label}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
-            <div style={{ fontWeight: 700, color: '#9ca3af' }}>🛠️ Management</div>
-            {items.find(g => g.id === 'management')?.children.map(child => (
-              <button key={child.id} data-burger-item="true" role="menuitem" onClick={() => { onNavigate(child.view); setMobileOpen(false); }} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 8, background: activeItemId === child.id ? '#1f2937' : 'transparent', color: 'white', border: 'none' }}>
-                {child.id === 'users' ? '👥 ' : child.id === 'notifications' ? '🔔 ' : ''}{child.label}
-              </button>
-            ))}
-          </div>
-          {items.find(g => g.id === 'admin') && (
-            <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
-              <div style={{ fontWeight: 700, color: '#9ca3af' }}>🛡️ Admin</div>
-              {items.find(g => g.id === 'admin')?.children.map(child => (
-                <button key={child.id} data-burger-item="true" role="menuitem" onClick={() => { onNavigate(child.view); setMobileOpen(false); }} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 8, background: activeItemId === child.id ? '#1f2937' : 'transparent', color: 'white', border: 'none' }}>
-                  {'🛡️ '}{child.label}
-                </button>
-              ))}
+          <div
+            style={{
+              width: 'min(480px, 94vw)',
+              background: '#0b1220',
+              border: '1px solid #1f2937',
+              borderRadius: 16,
+              padding: 16,
+              boxShadow: '0 24px 48px rgba(0,0,0,0.35)',
+              animation: 'slideIn 160ms ease-out'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontWeight: 800, color: 'white', letterSpacing: 0.2 }}>Quick Navigation</div>
+              <button onClick={() => setMobileOpen(false)} style={{ padding: '6px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 8 }}>Close</button>
             </div>
-          )}
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div style={{ fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', fontSize: 12 }}>Overview</div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {items.find(g => g.id === 'overview')?.children.map(child => (
+                  <button key={child.id} data-burger-item="true" role="menuitem" onClick={() => { onNavigate(child.view); setMobileOpen(false); }} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, background: activeItemId === child.id ? '#1f2937' : 'rgba(255,255,255,0.04)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8, transition: 'background 120ms ease' }}>
+                    <span>{child.id === 'dashboard' ? '🗺️' : child.id === 'analytics' ? '📊' : ''}</span>
+                    <span>{child.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
+              <div style={{ fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', fontSize: 12 }}>Management</div>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {items.find(g => g.id === 'management')?.children.map(child => (
+                  <button key={child.id} data-burger-item="true" role="menuitem" onClick={() => { onNavigate(child.view); setMobileOpen(false); }} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, background: activeItemId === child.id ? '#1f2937' : 'rgba(255,255,255,0.04)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8, transition: 'background 120ms ease' }}>
+                    <span>{child.id === 'users' ? '👥' : child.id === 'notifications' ? '🔔' : ''}</span>
+                    <span>{child.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {items.find(g => g.id === 'admin') && (
+              <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
+                <div style={{ fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', fontSize: 12 }}>Admin</div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {items.find(g => g.id === 'admin')?.children.map(child => (
+                    <button key={child.id} data-burger-item="true" role="menuitem" onClick={() => { onNavigate(child.view); setMobileOpen(false); }} style={{ textAlign: 'left', padding: '10px 12px', borderRadius: 10, background: activeItemId === child.id ? '#1f2937' : 'rgba(255,255,255,0.04)', color: 'white', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 8, transition: 'background 120ms ease' }}>
+                      <span>🛡️</span>
+                      <span>{child.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
