@@ -24,8 +24,7 @@ export default function Navbar({ user, currentView, onNavigate, onLogout, onGlob
         label: 'Management',
         children: [
           { id: 'users', label: 'Users', view: 'users' },
-          { id: 'notifications', label: 'Notifications', view: 'notifications' },
-          { id: 'earnings', label: 'Earnings', view: 'earnings' }
+          { id: 'notifications', label: 'Notifications', view: 'notifications' }
         ]
       }
     ];
@@ -195,7 +194,7 @@ export default function Navbar({ user, currentView, onNavigate, onLogout, onGlob
             <div style={{ fontWeight: 700, color: '#9ca3af' }}>🛠️ Management</div>
             {items.find(g => g.id === 'management')?.children.map(child => (
               <button key={child.id} data-burger-item="true" role="menuitem" onClick={() => { onNavigate(child.view); setMobileOpen(false); }} style={{ textAlign: 'left', padding: '8px 10px', borderRadius: 8, background: activeItemId === child.id ? '#1f2937' : 'transparent', color: 'white', border: 'none' }}>
-                {child.id === 'users' ? '👥 ' : child.id === 'notifications' ? '🔔 ' : child.id === 'earnings' ? '💰 ' : ''}{child.label}
+                {child.id === 'users' ? '👥 ' : child.id === 'notifications' ? '🔔 ' : ''}{child.label}
               </button>
             ))}
           </div>

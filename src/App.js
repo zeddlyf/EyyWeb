@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from './API';
 import Dashboard from './Dashboard';
-import Analytics from './Analytics';
 import UserManagement from './UserManagement';
 import Earnings from './Earnings';
 import Register from './Register';
@@ -12,7 +11,7 @@ import Login from './Login';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [currentView, setCurrentView] = useState('login'); // 'login', 'register', 'adminRegister', 'dashboard', 'analytics', 'users', 'feedbackAdmin', 'notifications', 'earnings'
+  const [currentView, setCurrentView] = useState('login'); // 'login', 'register', 'adminRegister', 'dashboard', 'analytics', 'users', 'feedbackAdmin', 'notifications'
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [overlayOpen, setOverlayOpen] = useState(false);
 
@@ -75,10 +74,11 @@ function App() {
   const renderView = () => {
     if (currentView === 'analytics') {
       return (
-        <Analytics 
+        <Earnings
           user={user} 
           onLogout={handleLogout}
           onNavigateToDashboard={() => setCurrentView('dashboard')}
+          onNavigateToAnalytics={() => setCurrentView('analytics')}
           onNavigateToUserManagement={() => setCurrentView('users')}
         />
       );
@@ -118,18 +118,6 @@ function App() {
       );
     }
 
-    if (currentView === 'earnings') {
-      return (
-        <Earnings
-          user={user}
-          onLogout={handleLogout}
-          onNavigateToDashboard={() => setCurrentView('dashboard')}
-          onNavigateToAnalytics={() => setCurrentView('analytics')}
-          onNavigateToUserManagement={() => setCurrentView('users')}
-        />
-      );
-    }
-
     return (
       <Dashboard 
         user={user} 
@@ -138,7 +126,6 @@ function App() {
         onNavigateToUserManagement={() => setCurrentView('users')}
         onNavigateToFeedbackAdmin={() => setCurrentView('feedbackAdmin')}
         onNavigateToNotifications={() => setCurrentView('notifications')}
-        onNavigateToEarnings={() => setCurrentView('earnings')}
       />
     );
   };
