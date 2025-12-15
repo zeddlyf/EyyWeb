@@ -16,6 +16,7 @@ function Earnings({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics
   const [timeRange, setTimeRange] = useState('day'); // day, week, month
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   // Set default date range (last 30 days)
   useEffect(() => {
@@ -40,6 +41,7 @@ function Earnings({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics
       
       const data = await api.makeRequest(`/payments/admin/earnings?${params.toString()}`);
       setEarnings(data);
+      setLastUpdated(new Date());
     } catch (err) {
       setError('Failed to load earnings: ' + err.message);
       console.error('Error fetching earnings:', err);
@@ -52,6 +54,17 @@ function Earnings({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics
     if (startDate && endDate) {
       fetchEarnings();
     }
+  }, [fetchEarnings, startDate, endDate]);
+
+  // Auto-refresh earnings data every 30 seconds to catch new transactions
+  useEffect(() => {
+    if (!startDate || !endDate) return;
+    
+    const interval = setInterval(() => {
+      fetchEarnings();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
   }, [fetchEarnings, startDate, endDate]);
 
   const formatCurrency = (amount) => {
@@ -73,8 +86,63 @@ function Earnings({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f9fafb' }}>
       <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
-        <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ margin: 0, color: '#1f2937' }}>Earnings Analytics</h1>
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <h1 style={{ margin: 0, color: '#1f2937' }}>Earnings Analytics</h1>
+            <button
+            onClick={fetchEarnings}
+            disabled={isLoading}
+            style={{
+              padding: '10px 20px',
+              background: isLoading ? '#9ca3af' : '#3B82F6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              opacity: isLoading ? 0.6 : 1,
+              transition: 'all 200ms ease'
+            }}
+            onMouseEnter={(e) => {
+              if (!isLoading) {
+                e.currentTarget.style.background = '#2563eb';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isLoading) {
+                e.currentTarget.style.background = '#3B82F6';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }
+            }}
+          >
+            {isLoading ? (
+              <>
+                <div style={{
+                  width: '14px',
+                  height: '14px',
+                  border: '2px solid white',
+                  borderTop: '2px solid transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite'
+                }}></div>
+                Refreshing...
+              </>
+            ) : (
+              <>🔄 Refresh</>
+            )}
+          </button>
+          </div>
+          {lastUpdated && (
+            <div style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>🔄</span>
+              <span>Last updated: {lastUpdated.toLocaleTimeString()} (Auto-refreshes every 30 seconds)</span>
+            </div>
+          )}
         </div>
 
         {isLoading ? (

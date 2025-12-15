@@ -494,20 +494,43 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
 
   const getStatusBadge = (status) => {
     const styles = {
-      pending: { background: '#fbbf24', color: '#92400e' },
-      approved: { background: '#10b981', color: '#065f46' },
-      rejected: { background: '#ef4444', color: '#991b1b' }
+      pending: { 
+        background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)', 
+        color: '#78350f',
+        border: '1px solid #fbbf24',
+        icon: '⏳'
+      },
+      approved: { 
+        background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)', 
+        color: '#065f46',
+        border: '1px solid #10b981',
+        icon: '✅'
+      },
+      rejected: { 
+        background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)', 
+        color: '#991b1b',
+        border: '1px solid #ef4444',
+        icon: '❌'
+      }
     };
     
+    const style = styles[status] || styles.pending;
+    
     return (
-      <span style={{
-        padding: '4px 8px',
-        borderRadius: '12px',
+      <span className="um-badge" style={{
+        padding: '6px 12px',
+        borderRadius: '20px',
         fontSize: '12px',
-        fontWeight: 'bold',
+        fontWeight: '700',
         textTransform: 'uppercase',
-        ...styles[status]
+        letterSpacing: '0.3px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+        ...style
       }}>
+        <span>{style.icon}</span>
         {status}
       </span>
     );
@@ -515,20 +538,39 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
 
   const getRoleBadge = (role) => {
     const styles = {
-      driver: { background: '#3b82f6', color: 'white' },
-      commuter: { background: '#8b5cf6', color: 'white' },
-      admin: { background: '#f59e0b', color: 'white' }
+      driver: { 
+        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', 
+        color: 'white',
+        icon: '🚗'
+      },
+      commuter: { 
+        background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)', 
+        color: 'white',
+        icon: '👤'
+      },
+      admin: { 
+        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
+        color: 'white',
+        icon: '👑'
+      }
     };
     
+    const style = styles[role] || styles.commuter;
+    
     return (
-      <span style={{
-        padding: '4px 8px',
-        borderRadius: '12px',
+      <span className="um-badge" style={{
+        padding: '6px 12px',
+        borderRadius: '20px',
         fontSize: '12px',
-        fontWeight: 'bold',
+        fontWeight: '700',
         textTransform: 'capitalize',
-        ...styles[role]
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+        ...style
       }}>
+        <span>{style.icon}</span>
         {role}
       </span>
     );
@@ -545,67 +587,127 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f9fafb' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--surface-muted)' }}>
       <style>
         {`
           .dropdown-scroll::-webkit-scrollbar {
-            width: 6px;
+            width: 8px;
           }
           .dropdown-scroll::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 3px;
+            background: var(--surface-muted);
+            border-radius: 4px;
           }
           .dropdown-scroll::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
+            background: var(--border);
+            border-radius: 4px;
           }
           .dropdown-scroll::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            background: var(--text-muted);
           }
 
           /* Toolbar aesthetics */
           .um-toolbar input, .um-toolbar select {
-            transition: box-shadow 160ms ease, border-color 160ms ease;
+            transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
           }
           .um-toolbar input:focus, .um-toolbar select:focus {
             outline: none;
-            border-color: #93c5fd;
-            box-shadow: 0 0 0 3px rgba(147,197,253,0.35);
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+            background: var(--surface);
           }
           .um-toolbar button {
-            transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, opacity 160ms ease;
+            transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
           }
           @media (prefers-reduced-motion: no-preference) {
-            .um-toolbar button:hover {
+            .um-toolbar button:hover:not(:disabled) {
               transform: translateY(-1px);
-              box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .um-toolbar button:active:not(:disabled) {
+              transform: translateY(0);
+            }
+          }
+
+          /* Table row hover effects */
+          .um-table-row {
+            transition: all 150ms ease;
+          }
+          @media (prefers-reduced-motion: no-preference) {
+            .um-table-row:hover {
+              background: var(--surface-muted);
+              transform: scale(1.001);
             }
           }
 
           /* Floating Action Button styles */
           .um-fab, .um-fab-mini {
-            box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+            box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);
             border: none;
             cursor: pointer;
             color: white;
             background: var(--brand-primary);
             border-radius: 9999px;
+            font-weight: 600;
           }
           .um-fab-mini {
-            background: #6b7280;
+            background: var(--text-muted);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
           }
           @media (prefers-reduced-motion: no-preference) {
             .um-fab, .um-fab-mini {
-              transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease, opacity 180ms ease;
+              transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
             }
-            .um-fab:hover, .um-fab-mini:hover {
-              transform: scale(1.03);
-              box-shadow: 0 10px 20px rgba(0,0,0,0.18);
+            .um-fab:hover:not(:disabled), .um-fab-mini:hover:not(:disabled) {
+              transform: translateY(-2px) scale(1.02);
+              box-shadow: 0 8px 20px rgba(22, 163, 74, 0.35);
+            }
+            .um-fab-mini:hover:not(:disabled) {
+              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            }
+            .um-fab:active:not(:disabled), .um-fab-mini:active:not(:disabled) {
+              transform: translateY(0) scale(1);
             }
           }
           .um-fab:focus-visible, .um-fab-mini:focus-visible {
-            outline: 3px solid #93c5fd;
+            outline: 3px solid var(--brand-primary);
             outline-offset: 3px;
+          }
+          .um-fab:disabled, .um-fab-mini:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+
+          /* Badge animations */
+          .um-badge {
+            transition: all 150ms ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+          }
+          @media (prefers-reduced-motion: no-preference) {
+            .um-badge:hover {
+              transform: scale(1.05);
+            }
+          }
+
+          /* Modal backdrop */
+          .um-modal-backdrop {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+          }
+
+          /* Action button improvements */
+          .um-action-btn {
+            transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+          }
+          @media (prefers-reduced-motion: no-preference) {
+            .um-action-btn:hover:not(:disabled) {
+              transform: translateY(-1px);
+              box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+            }
           }
         `}
       </style>
@@ -613,16 +715,30 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
         {/* Admin Access Check */}
         {user.role !== 'admin' && (
           <div style={{
-            background: '#fef2f2',
-            color: '#dc2626',
-            padding: '24px',
-            borderRadius: '12px',
-            border: '1px solid #fecaca',
+            background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+            color: '#991b1b',
+            padding: '32px',
+            borderRadius: '16px',
+            border: '2px solid #fca5a5',
             textAlign: 'center',
-            marginBottom: '24px'
+            marginBottom: '24px',
+            boxShadow: '0 4px 12px rgba(220, 38, 38, 0.1)'
           }}>
-            <h3 style={{ margin: '0 0 12px 0' }}>🚫 Access Denied</h3>
-            <p style={{ margin: '0', fontSize: '16px' }}>
+            <div style={{ fontSize: '56px', marginBottom: '16px' }}>🚫</div>
+            <h3 style={{ 
+              margin: '0 0 12px 0',
+              fontSize: '24px',
+              fontWeight: '700',
+              color: '#991b1b'
+            }}>
+              Access Denied
+            </h3>
+            <p style={{ 
+              margin: '0', 
+              fontSize: '16px',
+              color: '#7f1d1d',
+              lineHeight: '1.6'
+            }}>
               You need admin privileges to access user management. 
               Please contact your administrator or login with an admin account.
             </p>
@@ -632,27 +748,39 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
         {/* Filters and Search - Only show for admin users */}
         {user.role === 'admin' && (
           <div className="um-toolbar" style={{
-            background: 'white',
-            padding: '20px',
-            borderRadius: '12px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            border: '1px solid #e5e7eb',
+            background: 'var(--surface)',
+            padding: '24px',
+            borderRadius: '16px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+            border: '1px solid var(--border)',
             marginBottom: '24px'
           }}>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ 
+            display: 'flex', 
+            gap: '12px', 
+            alignItems: 'center', 
+            flexWrap: 'wrap' 
+          }}>
             {/* Search */}
-            <div style={{ flex: '1', minWidth: '200px' }}>
+            <div style={{ 
+              flex: '1', 
+              minWidth: '240px',
+              position: 'relative'
+            }}>
               <input
                 type="text"
-                placeholder="Search users..."
+                placeholder="🔍 Search users by name, email, or phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '8px 12px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  fontSize: '14px'
+                  padding: '12px 16px',
+                  border: '2px solid var(--border)',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  background: 'var(--surface-muted)',
+                  color: 'var(--text-primary)',
+                  transition: 'all 200ms ease'
                 }}
               />
             </div>
@@ -662,16 +790,19 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
               style={{
-                padding: '8px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
+                padding: '12px 16px',
+                border: '2px solid var(--border)',
+                borderRadius: '10px',
                 fontSize: '14px',
-                background: 'white'
+                background: 'var(--surface-muted)',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                minWidth: '140px'
               }}
             >
-              <option value="all">All Roles</option>
-              <option value="driver">Drivers</option>
-              <option value="commuter">Commuters</option>
+              <option value="all">👥 All Roles</option>
+              <option value="driver">🚗 Drivers</option>
+              <option value="commuter">👤 Commuters</option>
             </select>
 
             {/* Status Filter */}
@@ -679,17 +810,20 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               style={{
-                padding: '8px 12px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
+                padding: '12px 16px',
+                border: '2px solid var(--border)',
+                borderRadius: '10px',
                 fontSize: '14px',
-                background: 'white'
+                background: 'var(--surface-muted)',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                minWidth: '140px'
               }}
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
+              <option value="all">📊 All Status</option>
+              <option value="pending">⏳ Pending</option>
+              <option value="approved">✅ Approved</option>
+              <option value="rejected">❌ Rejected</option>
             </select>
 
             {/* Quick Filter for Pending Drivers */}
@@ -699,18 +833,20 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                   setRoleFilter('driver');
                   setStatusFilter('pending');
                 }}
+                className="um-action-btn"
                 style={{
-                  padding: '8px 16px',
-                  background: '#fbbf24',
-                  color: '#92400e',
+                  padding: '12px 20px',
+                  background: 'linear-gradient(135deg, var(--brand-accent) 0%, var(--brand-yellow-600) 100%)',
+                  color: '#78350f',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '10px',
                   cursor: 'pointer',
                   fontSize: '14px',
-                  fontWeight: 'bold'
+                  fontWeight: '600',
+                  boxShadow: '0 2px 8px rgba(251, 191, 36, 0.3)'
                 }}
               >
-                ⏳ Show Pending ({pendingDriversCount})
+                ⏳ Pending ({pendingDriversCount})
               </button>
             )}
 
@@ -722,38 +858,57 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                   setStatusFilter('all');
                   setSearchTerm('');
                 }}
+                className="um-action-btn"
                 style={{
-                  padding: '8px 16px',
-                  background: '#e5e7eb',
-                  color: '#374151',
-                  border: 'none',
-                  borderRadius: '6px',
+                  padding: '12px 20px',
+                  background: 'var(--surface-muted)',
+                  color: 'var(--text-primary)',
+                  border: '2px solid var(--border)',
+                  borderRadius: '10px',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  fontWeight: '500'
                 }}
               >
-                🗑️ Clear Filters
+                🗑️ Clear
               </button>
             )}
-
-            
 
             {/* Refresh Button */}
             <button
               onClick={fetchUsers}
               disabled={isLoading}
+              className="um-action-btn"
               style={{
-                padding: '8px 16px',
-                background: '#6b7280',
+                padding: '12px 20px',
+                background: isLoading ? 'var(--text-muted)' : 'var(--text-primary)',
                 color: 'white',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: '10px',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
                 fontSize: '14px',
-                opacity: isLoading ? 0.6 : 1
+                fontWeight: '600',
+                opacity: isLoading ? 0.7 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
               }}
             >
-              {isLoading ? '⏳' : '🔄'} Refresh
+              {isLoading ? (
+                <>
+                  <div style={{
+                    width: '14px',
+                    height: '14px',
+                    border: '2px solid white',
+                    borderTop: '2px solid transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 0.8s linear infinite'
+                  }}></div>
+                  Loading...
+                </>
+              ) : (
+                <>🔄 Refresh</>
+              )}
             </button>
           </div>
         </div>
@@ -762,38 +917,50 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
         {/* Success Message - Only show for admin users */}
         {user.role === 'admin' && successMessage && (
           <div style={{
-            background: '#f0fdf4',
+            background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
             color: '#166534',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            border: '1px solid #bbf7d0',
-            marginBottom: '16px'
+            padding: '16px 20px',
+            borderRadius: '12px',
+            border: '2px solid #86efac',
+            marginBottom: '20px',
+            boxShadow: '0 2px 8px rgba(22, 101, 52, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            animation: 'slideDown 0.3s ease-out'
           }}>
-            ✅ {successMessage}
+            <span style={{ fontSize: '20px' }}>✅</span>
+            <span style={{ fontWeight: '500', fontSize: '15px' }}>{successMessage}</span>
           </div>
         )}
 
         {/* Error Message - Only show for admin users */}
         {user.role === 'admin' && error && (
           <div style={{
-            background: '#fef2f2',
-            color: '#dc2626',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            border: '1px solid #fecaca',
-            marginBottom: '16px'
+            background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+            color: '#991b1b',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            border: '2px solid #fca5a5',
+            marginBottom: '20px',
+            boxShadow: '0 2px 8px rgba(220, 38, 38, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            animation: 'slideDown 0.3s ease-out'
           }}>
-            ❌ {error}
+            <span style={{ fontSize: '20px' }}>⚠️</span>
+            <span style={{ fontWeight: '500', fontSize: '15px' }}>{error}</span>
           </div>
         )}
 
         {/* Users Table - Only show for admin users */}
         {user.role === 'admin' && (
         <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          border: '1px solid #e5e7eb',
+          background: 'var(--surface)',
+          borderRadius: '16px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+          border: '1px solid var(--border)',
           overflow: 'hidden'
         }}>
           {isLoading ? (
@@ -801,75 +968,178 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
               display: 'flex', 
               justifyContent: 'center', 
               alignItems: 'center', 
-              height: '200px' 
+              height: '300px',
+              flexDirection: 'column',
+              gap: '16px'
             }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  border: '3px solid #3B82F6',
-                  borderTop: '3px solid transparent',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite',
-                  margin: '0 auto 12px'
-                }}></div>
-                <div>Loading users...</div>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                border: '4px solid var(--brand-primary)',
+                borderTop: '4px solid transparent',
+                borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite'
+              }}></div>
+              <div style={{ 
+                color: 'var(--text-muted)', 
+                fontSize: '15px',
+                fontWeight: '500'
+              }}>
+                Loading users...
               </div>
             </div>
           ) : filteredUsers.length === 0 ? (
             <div style={{ 
               textAlign: 'center', 
-              padding: '40px',
-              color: '#6b7280'
+              padding: '60px 40px',
+              color: 'var(--text-muted)'
             }}>
-              No users found matching your criteria
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
+              <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                No users found
+              </div>
+              <div style={{ fontSize: '14px' }}>
+                {searchTerm || roleFilter !== 'all' || statusFilter !== 'all' 
+                  ? 'Try adjusting your filters or search terms'
+                  : 'No users in the system yet'}
+              </div>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151' }}>User</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151' }}>Role</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151' }}>Status</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151' }}>Contact</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '14px', fontWeight: '600', color: '#374151' }}>Joined</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '14px', fontWeight: '600', color: '#374151' }}>Actions</th>
+                  <tr style={{ 
+                    background: 'linear-gradient(135deg, var(--surface-muted) 0%, var(--surface) 100%)',
+                    borderBottom: '2px solid var(--border)'
+                  }}>
+                    <th style={{ 
+                      padding: '16px 20px', 
+                      textAlign: 'left', 
+                      fontSize: '13px', 
+                      fontWeight: '700', 
+                      color: 'var(--text-primary)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>User</th>
+                    <th style={{ 
+                      padding: '16px 20px', 
+                      textAlign: 'left', 
+                      fontSize: '13px', 
+                      fontWeight: '700', 
+                      color: 'var(--text-primary)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Role</th>
+                    <th style={{ 
+                      padding: '16px 20px', 
+                      textAlign: 'left', 
+                      fontSize: '13px', 
+                      fontWeight: '700', 
+                      color: 'var(--text-primary)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Status</th>
+                    <th style={{ 
+                      padding: '16px 20px', 
+                      textAlign: 'left', 
+                      fontSize: '13px', 
+                      fontWeight: '700', 
+                      color: 'var(--text-primary)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Contact</th>
+                    <th style={{ 
+                      padding: '16px 20px', 
+                      textAlign: 'left', 
+                      fontSize: '13px', 
+                      fontWeight: '700', 
+                      color: 'var(--text-primary)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Joined</th>
+                    <th style={{ 
+                      padding: '16px 20px', 
+                      textAlign: 'center', 
+                      fontSize: '13px', 
+                      fontWeight: '700', 
+                      color: 'var(--text-primary)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredUsers.map((userItem) => (
-                    <tr key={userItem._id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                      <td style={{ padding: '12px 16px' }}>
+                    <tr 
+                      key={userItem._id} 
+                      className="um-table-row"
+                      style={{ 
+                        borderBottom: '1px solid var(--border)',
+                        background: 'var(--surface)'
+                      }}
+                    >
+                      <td style={{ padding: '16px 20px' }}>
                         <div>
-                          <div style={{ fontWeight: '500', color: '#1f2937' }}>
+                          <div style={{ 
+                            fontWeight: '600', 
+                            color: 'var(--text-primary)',
+                            fontSize: '15px',
+                            marginBottom: '4px'
+                          }}>
                             {userItem.firstName} {userItem.lastName}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                          <div style={{ 
+                            fontSize: '13px', 
+                            color: 'var(--text-muted)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}>
+                            <span>📧</span>
                             {userItem.email}
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td style={{ padding: '16px 20px' }}>
                         {getRoleBadge(userItem.role)}
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td style={{ padding: '16px 20px' }}>
                         {getStatusBadge(userItem.approvalStatus)}
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ fontSize: '14px', color: '#374151' }}>
-                          📞 {userItem.phoneNumber}
+                      <td style={{ padding: '16px 20px' }}>
+                        <div style={{ 
+                          fontSize: '14px', 
+                          color: 'var(--text-primary)',
+                          fontWeight: '500',
+                          marginBottom: userItem.role === 'driver' && userItem.licenseNumber ? '6px' : '0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <span>📞</span>
+                          {userItem.phoneNumber}
                         </div>
                         {userItem.role === 'driver' && userItem.licenseNumber && (
-                          <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                            🚗 {userItem.licenseNumber}
+                          <div style={{ 
+                            fontSize: '12px', 
+                            color: 'var(--text-muted)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}>
+                            <span>🚗</span>
+                            {userItem.licenseNumber}
                           </div>
                         )}
                       </td>
-                      <td style={{ padding: '12px 16px', fontSize: '14px', color: '#6b7280' }}>
+                      <td style={{ 
+                        padding: '16px 20px', 
+                        fontSize: '13px', 
+                        color: 'var(--text-muted)'
+                      }}>
                         {formatDate(userItem.createdAt)}
                       </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                      <td style={{ padding: '16px 20px', textAlign: 'center' }}>
                         <div className="dropdown-container" style={{ position: 'relative', display: 'inline-block' }}>
                           <button
                             data-action-btn-id={userItem._id}
@@ -884,17 +1154,24 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                               }
                               e.preventDefault();
                             }}
+                            className="um-action-btn"
                             style={{
-                              padding: '6px 12px',
-                              background: '#6b7280',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
+                              padding: '8px 16px',
+                              background: dropdownOpen === userItem._id 
+                                ? 'var(--brand-primary)' 
+                                : 'var(--surface-muted)',
+                              color: dropdownOpen === userItem._id ? 'white' : 'var(--text-primary)',
+                              border: dropdownOpen === userItem._id 
+                                ? 'none' 
+                                : '2px solid var(--border)',
+                              borderRadius: '8px',
                               cursor: 'pointer',
-                              fontSize: '12px',
+                              fontSize: '13px',
+                              fontWeight: '600',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: '4px'
+                              gap: '6px',
+                              transition: 'all 200ms ease'
                             }}
                           >
                             Actions
@@ -915,82 +1192,224 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
 
         {/* User Details Modal - Only show for admin users */}
         {user.role === 'admin' && showUserDetails && selectedUser && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
+          <div 
+            className="um-modal-backdrop"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(0,0,0,0.6)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: '20px',
+              animation: 'fadeIn 0.2s ease-out'
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowUserDetails(false);
+                setSelectedUser(null);
+              }
+            }}
+          >
             <div style={{
-              background: 'white',
-              borderRadius: '12px',
-              padding: '24px',
-              maxWidth: '600px',
-              width: '90%',
-              maxHeight: '80vh',
-              overflowY: 'auto',
-              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h3 style={{ margin: 0, fontSize: '20px', color: '#1f2937' }}>
-                  User Details
-                </h3>
+              background: 'var(--surface)',
+              borderRadius: '20px',
+              padding: '0',
+              maxWidth: '700px',
+              width: '100%',
+              maxHeight: '85vh',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              animation: 'slideUp 0.3s ease-out'
+            }}
+            onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div style={{
+                background: 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-green-700) 100%)',
+                padding: '24px 28px',
+                borderTopLeftRadius: '20px',
+                borderTopRightRadius: '20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <h3 style={{ 
+                    margin: 0, 
+                    fontSize: '24px', 
+                    color: 'white',
+                    fontWeight: '700',
+                    marginBottom: '4px'
+                  }}>
+                    👤 User Details
+                  </h3>
+                  <p style={{
+                    margin: 0,
+                    fontSize: '14px',
+                    color: 'rgba(255, 255, 255, 0.9)'
+                  }}>
+                    {selectedUser.firstName} {selectedUser.lastName}
+                  </p>
+                </div>
                 <button
                   onClick={() => {
                     setShowUserDetails(false);
                     setSelectedUser(null);
                   }}
                   style={{
-                    background: 'none',
+                    background: 'rgba(255, 255, 255, 0.2)',
                     border: 'none',
-                    fontSize: '24px',
+                    fontSize: '28px',
                     cursor: 'pointer',
-                    color: '#6b7280'
+                    color: 'white',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'background 0.2s'
                   }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
                 >
                   ×
                 </button>
               </div>
+              
+              {/* Content */}
+              <div style={{
+                padding: '28px',
+                overflowY: 'auto',
+                flex: 1
+              }}>
 
-              <div style={{ display: 'grid', gap: '16px' }}>
+              <div style={{ display: 'grid', gap: '20px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>First Name</label>
-                    <div style={{ padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '14px' }}>
+                    <label style={{ 
+                      fontSize: '13px', 
+                      fontWeight: '600', 
+                      color: 'var(--text-muted)', 
+                      display: 'block', 
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>First Name</label>
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: 'var(--surface-muted)', 
+                      borderRadius: '10px', 
+                      fontSize: '15px',
+                      color: 'var(--text-primary)',
+                      fontWeight: '500',
+                      border: '1px solid var(--border)'
+                    }}>
                       {selectedUser.firstName}
                     </div>
                   </div>
                   <div>
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>Last Name</label>
-                    <div style={{ padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '14px' }}>
+                    <label style={{ 
+                      fontSize: '13px', 
+                      fontWeight: '600', 
+                      color: 'var(--text-muted)', 
+                      display: 'block', 
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Last Name</label>
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: 'var(--surface-muted)', 
+                      borderRadius: '10px', 
+                      fontSize: '15px',
+                      color: 'var(--text-primary)',
+                      fontWeight: '500',
+                      border: '1px solid var(--border)'
+                    }}>
                       {selectedUser.lastName}
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>Email</label>
-                  <div style={{ padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '14px' }}>
+                  <label style={{ 
+                    fontSize: '13px', 
+                    fontWeight: '600', 
+                    color: 'var(--text-muted)', 
+                    display: 'block', 
+                    marginBottom: '8px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>Email Address</label>
+                  <div style={{ 
+                    padding: '12px 16px', 
+                    background: 'var(--surface-muted)', 
+                    borderRadius: '10px', 
+                    fontSize: '15px',
+                    color: 'var(--text-primary)',
+                    fontWeight: '500',
+                    border: '1px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span>📧</span>
                     {selectedUser.email}
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>Phone Number</label>
-                    <div style={{ padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '14px' }}>
+                    <label style={{ 
+                      fontSize: '13px', 
+                      fontWeight: '600', 
+                      color: 'var(--text-muted)', 
+                      display: 'block', 
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Phone Number</label>
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: 'var(--surface-muted)', 
+                      borderRadius: '10px', 
+                      fontSize: '15px',
+                      color: 'var(--text-primary)',
+                      fontWeight: '500',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <span>📞</span>
                       {selectedUser.phoneNumber}
                     </div>
                   </div>
                   <div>
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>Role</label>
-                    <div style={{ padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '14px' }}>
+                    <label style={{ 
+                      fontSize: '13px', 
+                      fontWeight: '600', 
+                      color: 'var(--text-muted)', 
+                      display: 'block', 
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Role</label>
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: 'var(--surface-muted)', 
+                      borderRadius: '10px', 
+                      fontSize: '15px',
+                      border: '1px solid var(--border)'
+                    }}>
                       {getRoleBadge(selectedUser.role)}
                     </div>
                   </div>
@@ -998,61 +1417,187 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
 
                 {selectedUser.role === 'driver' && selectedUser.licenseNumber && (
                   <div>
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>License Number</label>
-                    <div style={{ padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '14px' }}>
+                    <label style={{ 
+                      fontSize: '13px', 
+                      fontWeight: '600', 
+                      color: 'var(--text-muted)', 
+                      display: 'block', 
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>License Number</label>
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: 'var(--surface-muted)', 
+                      borderRadius: '10px', 
+                      fontSize: '15px',
+                      color: 'var(--text-primary)',
+                      fontWeight: '500',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <span>🚗</span>
                       {selectedUser.licenseNumber}
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>Address</label>
-                  <div style={{ padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '14px' }}>
+                  <label style={{ 
+                    fontSize: '13px', 
+                    fontWeight: '600', 
+                    color: 'var(--text-muted)', 
+                    display: 'block', 
+                    marginBottom: '8px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>Address</label>
+                  <div style={{ 
+                    padding: '12px 16px', 
+                    background: 'var(--surface-muted)', 
+                    borderRadius: '10px', 
+                    fontSize: '15px',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span>📍</span>
                     {selectedUser.address?.fullAddress || 'No address provided'}
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>Status</label>
-                    <div style={{ padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '14px' }}>
+                    <label style={{ 
+                      fontSize: '13px', 
+                      fontWeight: '600', 
+                      color: 'var(--text-muted)', 
+                      display: 'block', 
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Status</label>
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: 'var(--surface-muted)', 
+                      borderRadius: '10px', 
+                      fontSize: '15px',
+                      border: '1px solid var(--border)'
+                    }}>
                       {getStatusBadge(selectedUser.approvalStatus)}
                     </div>
                   </div>
                   <div>
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>Active</label>
-                    <div style={{ padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '14px' }}>
-                      {selectedUser.isActive ? '✅ Yes' : '❌ No'}
+                    <label style={{ 
+                      fontSize: '13px', 
+                      fontWeight: '600', 
+                      color: 'var(--text-muted)', 
+                      display: 'block', 
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Active</label>
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: 'var(--surface-muted)', 
+                      borderRadius: '10px', 
+                      fontSize: '15px',
+                      color: 'var(--text-primary)',
+                      fontWeight: '500',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      {selectedUser.isActive ? '✅ Active' : '❌ Inactive'}
                     </div>
                   </div>
                   <div>
-                    <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>Rating</label>
-                    <div style={{ padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '14px' }}>
-                      ⭐ {selectedUser.rating?.toFixed(1) || 'No rating'}
+                    <label style={{ 
+                      fontSize: '13px', 
+                      fontWeight: '600', 
+                      color: 'var(--text-muted)', 
+                      display: 'block', 
+                      marginBottom: '8px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>Rating</label>
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: 'var(--surface-muted)', 
+                      borderRadius: '10px', 
+                      fontSize: '15px',
+                      color: 'var(--text-primary)',
+                      fontWeight: '500',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <span>⭐</span>
+                      {selectedUser.rating?.toFixed(1) || 'No rating'}
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '4px' }}>Joined Date</label>
-                  <div style={{ padding: '8px 12px', background: '#f9fafb', borderRadius: '6px', fontSize: '14px' }}>
+                  <label style={{ 
+                    fontSize: '13px', 
+                    fontWeight: '600', 
+                    color: 'var(--text-muted)', 
+                    display: 'block', 
+                    marginBottom: '8px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>Joined Date</label>
+                  <div style={{ 
+                    padding: '12px 16px', 
+                    background: 'var(--surface-muted)', 
+                    borderRadius: '10px', 
+                    fontSize: '15px',
+                    color: 'var(--text-primary)',
+                    fontWeight: '500',
+                    border: '1px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span>📅</span>
                     {formatDate(selectedUser.createdAt)}
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: '12px', 
+                marginTop: '28px', 
+                paddingTop: '24px',
+                borderTop: '2px solid var(--border)',
+                justifyContent: 'flex-end',
+                flexWrap: 'wrap'
+              }}>
                 <button
                   onClick={() => openEditForm(selectedUser)}
+                  className="um-action-btn"
                   style={{
-                    padding: '8px 16px',
-                    background: '#f59e0b',
+                    padding: '12px 20px',
+                    background: 'linear-gradient(135deg, var(--brand-secondary) 0%, var(--brand-yellow-600) 100%)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '10px',
                     cursor: 'pointer',
-                    fontSize: '14px'
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                 >
                   ✏️ Edit User
@@ -1061,15 +1606,25 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                 <button
                   onClick={() => handleUserToggle(selectedUser._id, !selectedUser.isActive)}
                   disabled={actionLoading}
+                  className="um-action-btn"
                   style={{
-                    padding: '8px 16px',
-                    background: selectedUser.isActive ? '#f59e0b' : '#10b981',
+                    padding: '12px 20px',
+                    background: selectedUser.isActive 
+                      ? 'linear-gradient(135deg, var(--brand-secondary) 0%, var(--brand-yellow-600) 100%)'
+                      : 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-green-700) 100%)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '10px',
                     cursor: actionLoading ? 'not-allowed' : 'pointer',
                     fontSize: '14px',
-                    opacity: actionLoading ? 0.6 : 1
+                    fontWeight: '600',
+                    opacity: actionLoading ? 0.6 : 1,
+                    boxShadow: selectedUser.isActive 
+                      ? '0 2px 8px rgba(245, 158, 11, 0.3)'
+                      : '0 2px 8px rgba(22, 163, 74, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                 >
                   {selectedUser.isActive ? '⏸️ Deactivate' : '▶️ Activate'}
@@ -1078,36 +1633,48 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                 {selectedUser.role === 'driver' && selectedUser.approvalStatus === 'pending' && (
                   <>
                     <button
-                      onClick={() => handleUserAction(selectedUser._id, 'rejected')}
-                      disabled={actionLoading}
-                      style={{
-                        padding: '8px 16px',
-                        background: '#ef4444',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: actionLoading ? 'not-allowed' : 'pointer',
-                        fontSize: '14px',
-                        opacity: actionLoading ? 0.6 : 1
-                      }}
-                    >
-                      ❌ Reject
-                    </button>
-                    <button
                       onClick={() => handleUserAction(selectedUser._id, 'approved')}
                       disabled={actionLoading}
+                      className="um-action-btn"
                       style={{
-                        padding: '8px 16px',
-                        background: '#10b981',
+                        padding: '12px 20px',
+                        background: 'linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-green-700) 100%)',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '6px',
+                        borderRadius: '10px',
                         cursor: actionLoading ? 'not-allowed' : 'pointer',
                         fontSize: '14px',
-                        opacity: actionLoading ? 0.6 : 1
+                        fontWeight: '600',
+                        opacity: actionLoading ? 0.6 : 1,
+                        boxShadow: '0 2px 8px rgba(22, 163, 74, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
                       }}
                     >
                       ✅ Approve
+                    </button>
+                    <button
+                      onClick={() => handleUserAction(selectedUser._id, 'rejected')}
+                      disabled={actionLoading}
+                      className="um-action-btn"
+                      style={{
+                        padding: '12px 20px',
+                        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: actionLoading ? 'not-allowed' : 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        opacity: actionLoading ? 0.6 : 1,
+                        boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      ❌ Reject
                     </button>
                   </>
                 )}
@@ -1115,16 +1682,20 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                 <button
                   onClick={() => handleDeleteUser(selectedUser._id, false)}
                   disabled={actionLoading}
+                  className="um-action-btn"
                   style={{
-                    padding: '8px 16px',
-                    background: '#f59e0b',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
+                    padding: '12px 20px',
+                    background: 'var(--surface-muted)',
+                    color: 'var(--text-primary)',
+                    border: '2px solid var(--border)',
+                    borderRadius: '10px',
                     cursor: actionLoading ? 'not-allowed' : 'pointer',
                     fontSize: '14px',
+                    fontWeight: '600',
                     opacity: actionLoading ? 0.6 : 1,
-                    marginRight: '8px'
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                 >
                   🚫 Deactivate
@@ -1132,19 +1703,26 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                 <button
                   onClick={() => handleDeleteUser(selectedUser._id, true)}
                   disabled={actionLoading}
+                  className="um-action-btn"
                   style={{
-                    padding: '8px 16px',
-                    background: '#ef4444',
+                    padding: '12px 20px',
+                    background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '10px',
                     cursor: actionLoading ? 'not-allowed' : 'pointer',
                     fontSize: '14px',
-                    opacity: actionLoading ? 0.6 : 1
+                    fontWeight: '600',
+                    opacity: actionLoading ? 0.6 : 1,
+                    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                 >
                   🗑️ Delete Permanently
                 </button>
+              </div>
               </div>
             </div>
           </div>
@@ -2061,16 +2639,17 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
             position: 'fixed',
             top: `${dropdownPos.top}px`,
             left: `${dropdownPos.left}px`,
-            background: 'white',
-            border: '1px solid #e5e7eb',
-            borderRadius: '10px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: '12px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)',
             zIndex: 900,
-            minWidth: '200px',
-            maxWidth: '260px',
-            maxHeight: '320px',
+            minWidth: '220px',
+            maxWidth: '280px',
+            maxHeight: '400px',
             overflowY: 'auto',
             overscrollBehavior: 'contain',
+            animation: 'slideDown 0.2s ease-out'
           }}
           onWheel={(e) => e.stopPropagation()}
           onTouchMove={(e) => e.stopPropagation()}
@@ -2079,7 +2658,7 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
             const userItem = filteredUsers.find(u => u._id === dropdownOpen);
             if (!userItem) return null;
             return (
-              <div style={{ padding: '6px 0' }}>
+              <div style={{ padding: '8px' }}>
                 <button
                   onClick={() => {
                     setSelectedUser(userItem);
@@ -2088,18 +2667,31 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                   }}
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
+                    padding: '12px 16px',
                     background: 'none',
                     border: 'none',
                     textAlign: 'left',
                     cursor: 'pointer',
                     fontSize: '14px',
-                    color: '#374151'
+                    color: 'var(--text-primary)',
+                    borderRadius: '8px',
+                    fontWeight: '500',
+                    transition: 'all 150ms ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--surface-muted)';
+                    e.currentTarget.style.transform = 'translateX(2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'none';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
                 >
-                  👁️ View Details
+                  <span style={{ fontSize: '16px' }}>👁️</span>
+                  View Details
                 </button>
 
                 <button
@@ -2109,18 +2701,31 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                   }}
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
+                    padding: '12px 16px',
                     background: 'none',
                     border: 'none',
                     textAlign: 'left',
                     cursor: 'pointer',
                     fontSize: '14px',
-                    color: '#374151'
+                    color: 'var(--text-primary)',
+                    borderRadius: '8px',
+                    fontWeight: '500',
+                    transition: 'all 150ms ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--surface-muted)';
+                    e.currentTarget.style.transform = 'translateX(2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'none';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
                 >
-                  ✏️ Edit User
+                  <span style={{ fontSize: '16px' }}>✏️</span>
+                  Edit User
                 </button>
 
                 {userItem.role === 'driver' && userItem.approvalStatus === 'pending' && (
@@ -2133,19 +2738,34 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                       disabled={actionLoading}
                       style={{
                         width: '100%',
-                        padding: '10px 14px',
+                        padding: '12px 16px',
                         background: 'none',
                         border: 'none',
                         textAlign: 'left',
                         cursor: actionLoading ? 'not-allowed' : 'pointer',
                         fontSize: '14px',
-                        color: '#10b981',
-                        opacity: actionLoading ? 0.6 : 1
+                        color: 'var(--brand-primary)',
+                        borderRadius: '8px',
+                        fontWeight: '500',
+                        opacity: actionLoading ? 0.6 : 1,
+                        transition: 'all 150ms ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px'
                       }}
-                      onMouseEnter={(e) => !actionLoading && (e.currentTarget.style.background = '#f0fdf4')}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                      onMouseEnter={(e) => {
+                        if (!actionLoading) {
+                          e.currentTarget.style.background = 'rgba(22, 163, 74, 0.1)';
+                          e.currentTarget.style.transform = 'translateX(2px)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'none';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                      }}
                     >
-                      ✅ Approve Driver
+                      <span style={{ fontSize: '16px' }}>✅</span>
+                      Approve Driver
                     </button>
 
                     <button
@@ -2156,19 +2776,34 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                       disabled={actionLoading}
                       style={{
                         width: '100%',
-                        padding: '10px 14px',
+                        padding: '12px 16px',
                         background: 'none',
                         border: 'none',
                         textAlign: 'left',
                         cursor: actionLoading ? 'not-allowed' : 'pointer',
                         fontSize: '14px',
                         color: '#ef4444',
-                        opacity: actionLoading ? 0.6 : 1
+                        borderRadius: '8px',
+                        fontWeight: '500',
+                        opacity: actionLoading ? 0.6 : 1,
+                        transition: 'all 150ms ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px'
                       }}
-                      onMouseEnter={(e) => !actionLoading && (e.currentTarget.style.background = '#fef2f2')}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                      onMouseEnter={(e) => {
+                        if (!actionLoading) {
+                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                          e.currentTarget.style.transform = 'translateX(2px)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'none';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                      }}
                     >
-                      ❌ Reject Driver
+                      <span style={{ fontSize: '16px' }}>❌</span>
+                      Reject Driver
                     </button>
                   </>
                 )}
@@ -2181,22 +2816,44 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                   disabled={actionLoading}
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
+                    padding: '12px 16px',
                     background: 'none',
                     border: 'none',
                     textAlign: 'left',
                     cursor: actionLoading ? 'not-allowed' : 'pointer',
                     fontSize: '14px',
-                    color: userItem.isActive ? '#f59e0b' : '#10b981',
-                    opacity: actionLoading ? 0.6 : 1
+                    color: userItem.isActive ? 'var(--brand-secondary)' : 'var(--brand-primary)',
+                    borderRadius: '8px',
+                    fontWeight: '500',
+                    opacity: actionLoading ? 0.6 : 1,
+                    transition: 'all 150ms ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
                   }}
-                  onMouseEnter={(e) => !actionLoading && (e.currentTarget.style.background = userItem.isActive ? '#fffbeb' : '#f0fdf4')}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  onMouseEnter={(e) => {
+                    if (!actionLoading) {
+                      e.currentTarget.style.background = userItem.isActive 
+                        ? 'rgba(245, 158, 11, 0.1)' 
+                        : 'rgba(22, 163, 74, 0.1)';
+                      e.currentTarget.style.transform = 'translateX(2px)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'none';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
                 >
-                  {userItem.isActive ? '⏸️ Deactivate' : '▶️ Activate'}
+                  <span style={{ fontSize: '16px' }}>
+                    {userItem.isActive ? '⏸️' : '▶️'}
+                  </span>
+                  {userItem.isActive ? 'Deactivate' : 'Activate'}
                 </button>
 
-                <div style={{ borderTop: '1px solid #e5e7eb', margin: '6px 0' }}></div>
+                <div style={{ 
+                  borderTop: '1px solid var(--border)', 
+                  margin: '8px 0' 
+                }}></div>
 
                 <button
                   onClick={() => {
@@ -2206,19 +2863,34 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                   disabled={actionLoading}
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
+                    padding: '12px 16px',
                     background: 'none',
                     border: 'none',
                     textAlign: 'left',
                     cursor: actionLoading ? 'not-allowed' : 'pointer',
                     fontSize: '14px',
-                    color: '#f59e0b',
-                    opacity: actionLoading ? 0.6 : 1
+                    color: 'var(--brand-secondary)',
+                    borderRadius: '8px',
+                    fontWeight: '500',
+                    opacity: actionLoading ? 0.6 : 1,
+                    transition: 'all 150ms ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
                   }}
-                  onMouseEnter={(e) => !actionLoading && (e.currentTarget.style.background = '#fffbeb')}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  onMouseEnter={(e) => {
+                    if (!actionLoading) {
+                      e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)';
+                      e.currentTarget.style.transform = 'translateX(2px)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'none';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
                 >
-                  🚫 Deactivate User
+                  <span style={{ fontSize: '16px' }}>🚫</span>
+                  Deactivate User
                 </button>
 
                 <button
@@ -2229,19 +2901,34 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                   disabled={actionLoading}
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
+                    padding: '12px 16px',
                     background: 'none',
                     border: 'none',
                     textAlign: 'left',
                     cursor: actionLoading ? 'not-allowed' : 'pointer',
                     fontSize: '14px',
                     color: '#ef4444',
-                    opacity: actionLoading ? 0.6 : 1
+                    borderRadius: '8px',
+                    fontWeight: '500',
+                    opacity: actionLoading ? 0.6 : 1,
+                    transition: 'all 150ms ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
                   }}
-                  onMouseEnter={(e) => !actionLoading && (e.currentTarget.style.background = '#fef2f2')}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                  onMouseEnter={(e) => {
+                    if (!actionLoading) {
+                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                      e.currentTarget.style.transform = 'translateX(2px)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'none';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
                 >
-                  🗑️ Permanently Delete
+                  <span style={{ fontSize: '16px' }}>🗑️</span>
+                  Permanently Delete
                 </button>
               </div>
             );
@@ -2337,6 +3024,16 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
           from { 
             opacity: 0;
             transform: translateY(20px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes slideDown {
+          from { 
+            opacity: 0;
+            transform: translateY(-10px);
           }
           to { 
             opacity: 1;

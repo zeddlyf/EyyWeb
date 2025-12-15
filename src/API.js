@@ -144,29 +144,6 @@ class APIService {
     return data;
   }
 
-  // Password reset (OTP) flows
-  async requestPasswordReset(identifier) {
-    // identifier can be email or phone; backend treats generically
-    return await this.makeRequest('/auth/password/request', {
-      method: 'POST',
-      body: JSON.stringify({ identifier }),
-    });
-  }
-
-  async verifyPasswordOtp(identifier, otp) {
-    return await this.makeRequest('/auth/password/verify', {
-      method: 'POST',
-      body: JSON.stringify({ identifier, otp }),
-    });
-  }
-
-  async resetPassword(resetToken, newPassword) {
-    return await this.makeRequest('/auth/password/reset', {
-      method: 'POST',
-      body: JSON.stringify({ resetToken, newPassword }),
-    });
-  }
-
   async registerAdmin(userData) {
     const data = await this.makeRequest('/users/', {
       method: 'POST',
