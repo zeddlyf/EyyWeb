@@ -4,12 +4,16 @@ import api from './API';
 function Earnings({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics, onNavigateToUserManagement }) {
   const [earnings, setEarnings] = useState({
     totalEarnings: 0,
+    totalTopUps: 0,
     platformEarnings: 0,
     driverTotalEarnings: 0,
     totalTransactions: 0,
+    totalPayments: 0,
+    totalTopUpTransactions: 0,
     earningsByPeriod: [],
     driverEarnings: [],
-    payments: []
+    payments: [],
+    transactions: []
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -88,7 +92,7 @@ function Earnings({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics
       <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
         <div style={{ marginBottom: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <h1 style={{ margin: 0, color: '#1f2937' }}>Earnings Analytics</h1>
+          <h1 style={{ margin: 0, color: '#1f2937' }}>Earnings Analytics</h1>
             <button
             onClick={fetchEarnings}
             disabled={isLoading}
@@ -319,7 +323,28 @@ function Earnings({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics
                   <div>
                     <div style={{ fontSize: '14px', color: '#6b7280' }}>Total Transactions</div>
                     <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>
-                      {earnings.totalTransactions}
+                      {earnings.totalTransactions || 0}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'white',
+                padding: '24px',
+                borderRadius: '12px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                border: '1px solid #e5e7eb'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '24px', marginRight: '12px' }}>💳</div>
+                  <div>
+                    <div style={{ fontSize: '14px', color: '#6b7280' }}>Total Top-Ups</div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981' }}>
+                      {formatCurrency(earnings.totalTopUps || 0)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                      {earnings.totalTopUpTransactions || 0} transactions
                     </div>
                   </div>
                 </div>
@@ -404,8 +429,101 @@ function Earnings({ user, onLogout, onNavigateToDashboard, onNavigateToAnalytics
               </div>
             )}
 
-            {/* Recent Payments */}
-            {earnings.payments && earnings.payments.length > 0 && (
+            {/* All Transactions (Payments + Top-Ups) */}
+            {earnings.transactions && earnings.transactions.length > 0 && (
+              <div style={{
+                background: 'white',
+                padding: '24px',
+                borderRadius: '12px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                border: '1px solid #e5e7eb',
+                marginBottom: '32px'
+              }}>
+                <h3 style={{ margin: '0 0 20px 0', color: '#1f2937' }}>All Transactions</h3>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                        <th style={{ padding: '12px', textAlign: 'left', color: '#6b7280', fontSize: '14px', fontWeight: '600' }}>Date</th>
+                        <th style={{ padding: '12px', textAlign: 'left', color: '#6b7280', fontSize: '14px', fontWeight: '600' }}>Type</th>
+                        <th style={{ padding: '12px', textAlign: 'left', color: '#6b7280', fontSize: '14px', fontWeight: '600' }}>User</th>
+                        <th style={{ padding: '12px', textAlign: 'left', color: '#6b7280', fontSize: '14px', fontWeight: '600' }}>Method</th>
+                        <th style={{ padding: '12px', textAlign: 'right', color: '#6b7280', fontSize: '14px', fontWeight: '600' }}>Amount</th>
+                        <th style={{ padding: '12px', textAlign: 'center', color: '#6b7280', fontSize: '14px', fontWeight: '600' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {earnings.transactions.map((transaction) => {
+                        const isTopUp = transaction.type === 'TOPUP' || transaction.transactionType === 'topup';
+                        const userName = transaction.user 
+                          ? (transaction.user.firstName && transaction.user.lastName 
+                              ? `${transaction.user.firstName} ${transaction.user.lastName}`
+                              : transaction.user.email || 'N/A')
+                          : 'N/A';
+                        
+                        return (
+                          <tr key={transaction._id || transaction.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                            <td style={{ padding: '12px', color: '#1f2937', fontSize: '14px' }}>
+                              {formatDate(transaction.date || transaction.createdAt)}
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <span style={{
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                fontWeight: '500',
+                                background: isTopUp ? '#dbeafe' : '#f3f4f6',
+                                color: isTopUp ? '#1e40af' : '#374151'
+                              }}>
+                                {isTopUp ? '💳 Top-Up' : '💰 Payment'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px', color: '#1f2937', fontSize: '14px' }}>
+                              {userName}
+                            </td>
+                            <td style={{ padding: '12px', color: '#6b7280', fontSize: '14px', textTransform: 'capitalize' }}>
+                              {transaction.method || transaction.paymentMethod || (isTopUp ? 'E-Wallet' : 'N/A')}
+                            </td>
+                            <td style={{ 
+                              padding: '12px', 
+                              textAlign: 'right', 
+                              color: isTopUp ? '#10b981' : '#1f2937', 
+                              fontWeight: '600', 
+                              fontSize: '14px' 
+                            }}>
+                              {formatCurrency(transaction.amount)}
+                            </td>
+                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <span style={{
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                fontWeight: '500',
+                                background: transaction.status === 'PAID' || transaction.status === 'COMPLETED' || transaction.status === 'completed' 
+                                  ? '#d1fae5' 
+                                  : transaction.status === 'PENDING' || transaction.status === 'pending' 
+                                    ? '#fef3c7' 
+                                    : '#fee2e2',
+                                color: transaction.status === 'PAID' || transaction.status === 'COMPLETED' || transaction.status === 'completed'
+                                  ? '#065f46'
+                                  : transaction.status === 'PENDING' || transaction.status === 'pending'
+                                    ? '#92400e'
+                                    : '#991b1b'
+                              }}>
+                                {transaction.status || 'COMPLETED'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Recent Payments (Legacy - for backward compatibility) */}
+            {earnings.payments && earnings.payments.length > 0 && !earnings.transactions && (
               <div style={{
                 background: 'white',
                 padding: '24px',

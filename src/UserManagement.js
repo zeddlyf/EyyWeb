@@ -972,14 +972,14 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
               flexDirection: 'column',
               gap: '16px'
             }}>
-              <div style={{
+                <div style={{
                 width: '48px',
                 height: '48px',
                 border: '4px solid var(--brand-primary)',
                 borderTop: '4px solid transparent',
-                borderRadius: '50%',
+                  borderRadius: '50%',
                 animation: 'spin 0.8s linear infinite'
-              }}></div>
+                }}></div>
               <div style={{ 
                 color: 'var(--text-muted)', 
                 fontSize: '15px',
@@ -1195,15 +1195,15 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
           <div 
             className="um-modal-backdrop"
             style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
               background: 'rgba(0,0,0,0.6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
               zIndex: 1000,
               padding: '20px',
               animation: 'fadeIn 0.2s ease-out'
@@ -1249,7 +1249,7 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                     marginBottom: '4px'
                   }}>
                     👤 User Details
-                  </h3>
+                </h3>
                   <p style={{
                     margin: 0,
                     fontSize: '14px',
@@ -1283,7 +1283,7 @@ function UserManagement({ user, onLogout, onNavigateToDashboard, onNavigateToAna
                   ×
                 </button>
               </div>
-              
+
               {/* Content */}
               <div style={{
                 padding: '28px',
