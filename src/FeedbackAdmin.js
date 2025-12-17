@@ -14,8 +14,20 @@ export default function FeedbackAdmin({ user, onLogout, onNavigateToDashboard })
   const load = useCallback(async () => {
     try {
       const res = await api.listFeedback(selectedDriverId || undefined, { status: normalizedStatus, sort, page: 1, limit: 50 });
-      setItems(res.items || []);
+
+      // Handle various backend response shapes (array or { items })
+      const nextItems = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.items)
+        ? res.items
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+
+      setItems(nextItems);
+      setError('');
     } catch (err) {
+      setItems([]);
       setError('Failed to load feedback: ' + err.message);
     }
   }, [normalizedStatus, sort, selectedDriverId]);
@@ -82,6 +94,11 @@ export default function FeedbackAdmin({ user, onLogout, onNavigateToDashboard })
         </div>
         {error && <div style={{ background: '#fef2f2', color: '#b91c1c', padding: 10, borderRadius: 6, border: '1px solid #fecaca', marginBottom: 12 }}>{error}</div>}
         {message && <div style={{ background: '#ecfdf5', color: '#065f46', padding: 10, borderRadius: 6, border: '1px solid #a7f3d0', marginBottom: 12 }}>{message}</div>}
+        {items.length === 0 && !error && (
+          <div style={{ background: '#eef2ff', color: '#4338ca', padding: 12, borderRadius: 8, border: '1px solid #c7d2fe' }}>
+            No feedback to moderate for this filter.
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
           {items.map((it) => (
             <div key={it._id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>

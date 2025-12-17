@@ -16,6 +16,9 @@ function Login({ onLoggedIn }) {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Must match backend policy: min 8, upper, lower, number, symbol
+  const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
   useEffect(() => {
     const handler = () => setSessionMessage('Your session has expired. Please login again.');
     window.addEventListener('api:sessionExpired', handler);
@@ -30,6 +33,14 @@ function Login({ onLoggedIn }) {
     setIsLoading(true);
     try {
       const data = await api.login(email, password);
+
+      // Web portal is admin-only; reject other roles
+      if (!data?.user || data.user.role !== 'admin') {
+        api.logout(); // remove token/user saved during login
+        setError('Only admin accounts can sign in to this portal.');
+        return;
+      }
+
       onLoggedIn(data.user);
     } catch (err) {
       setError(err.message);
@@ -67,7 +78,7 @@ function Login({ onLoggedIn }) {
       setInfoMessage('If this account exists, a verification code was sent via email/SMS.');
       setAuthView('forgotVerify');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Unable to request a reset right now.');
     } finally {
       setIsLoading(false);
     }
@@ -76,13 +87,14 @@ function Login({ onLoggedIn }) {
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     resetMessages();
-    if (!otp) {
-      setError('Please enter the verification code.');
+    const trimmedOtp = otp.trim();
+    if (!trimmedOtp) {
+      setError('Please enter the 6-digit verification code.');
       return;
     }
     setIsLoading(true);
     try {
-      const data = await api.verifyPasswordOtp(identifier, otp);
+      const data = await api.verifyPasswordOtp(identifier, trimmedOtp);
       const token = data.resetToken || data.token;
       if (!token) {
         throw new Error('Reset token missing from server response.');
@@ -91,7 +103,7 @@ function Login({ onLoggedIn }) {
       setInfoMessage('Code verified. Please set your new password.');
       setAuthView('forgotReset');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Invalid or expired code.');
     } finally {
       setIsLoading(false);
     }
@@ -108,8 +120,8 @@ function Login({ onLoggedIn }) {
       setError('Passwords do not match.');
       return;
     }
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long.');
+    if (!passwordPolicy.test(newPassword)) {
+      setError('Password must be 8+ chars with upper, lower, number, and symbol.');
       return;
     }
     setIsLoading(true);

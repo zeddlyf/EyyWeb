@@ -29,9 +29,20 @@ export default function NotificationCenter({ user, onLogout, onNavigateToDashboa
   const load = useCallback(async () => {
     try {
       const res = await api.getNotifications({ unread: unreadOnly });
-      setItems(res.items || []);
+
+      // Accept multiple response shapes (array, { items }, { data })
+      const nextItems = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.items)
+        ? res.items
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+
+      setItems(nextItems);
       setError('');
     } catch (err) {
+      setItems([]);
       setError('Failed to load notifications: ' + err.message);
     }
   }, [unreadOnly]);
@@ -57,7 +68,11 @@ export default function NotificationCenter({ user, onLogout, onNavigateToDashboa
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f9fafb' }}>
       <div style={{ flex: 1, padding: 24, overflowY: 'auto' }}>
         {error && <div style={{ background: '#fef2f2', color: '#b91c1c', padding: 10, borderRadius: 6, border: '1px solid #fecaca', marginBottom: 12 }}>{error}</div>}
-        {Object.keys(grouped).length === 0 && <div style={{ background: '#fff', padding: 16, borderRadius: 12, border: '1px solid #e5e7eb' }}>No notifications</div>}
+        {Object.keys(grouped).length === 0 && !error && (
+          <div style={{ background: '#fff', padding: 16, borderRadius: 12, border: '1px solid #e5e7eb' }}>
+            No notifications yet.
+          </div>
+        )}
         {Object.entries(grouped).map(([date, list]) => (
           <div key={date} style={{ marginBottom: 16 }}>
             <div style={{ marginBottom: 8, color: '#374151', fontWeight: '600' }}>{date}</div>
